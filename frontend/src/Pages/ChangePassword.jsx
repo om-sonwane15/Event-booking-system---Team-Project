@@ -16,7 +16,7 @@ const ChangePassword = () => {
 
   const navigate = useNavigate();
 
- const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
   e.preventDefault();
   setIsLoading(true);
 
@@ -33,11 +33,23 @@ const ChangePassword = () => {
   }
 
   try {
-    const response = await axiosInstance.post("/auth/change-password", {
-      oldPassword,
-      newPassword,
-    });
-  
+    const token = sessionStorage.getItem("token")||localStorage.getItem("token")
+    if (!token) {
+      toast.error("User is not authenticated. Please login again.");
+      setIsLoading(false);
+      return;
+    }
+
+    const response = await axiosInstance.post(
+      "/auth/change-password",
+      { oldPassword, newPassword },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
     toast.success(response.data.msg || "Password changed successfully!");
     setOldPassword("");
     setNewPassword("");
@@ -47,7 +59,6 @@ const ChangePassword = () => {
       navigate("/");
     }, 2000);
   } catch (err) {
-
     const message =
       err.response?.data?.msg || "An error occurred while changing the password.";
     toast.error(message);
