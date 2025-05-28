@@ -9,7 +9,7 @@ import {
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
-    username: "",
+    email: "",
     password: "",
     rememberMe: false,
   });
@@ -35,14 +35,12 @@ const LoginPage = () => {
     try {
       const response = await axios.post("/api/login", formData);
 
-      // Simulate storing token or session
       if (formData.rememberMe) {
         localStorage.setItem("user", JSON.stringify(response.data));
       } else {
         sessionStorage.setItem("user", JSON.stringify(response.data));
       }
 
-      // Redirect to dashboard
       navigate("/dashboard");
     } catch (error) {
       setErrorMsg("Invalid credentials. Please try again.");
@@ -54,7 +52,6 @@ const LoginPage = () => {
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center bg-cover bg-center bg-no-repeat"
-
       style={{
         backgroundImage: `url('/spotlight.jpg')`,
       }}
@@ -66,26 +63,26 @@ const LoginPage = () => {
             <h1 className="text-3xl font-bold text-gray-800 mb-8">Login</h1>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Username */}
+              {/* Email */}
               <div>
                 <label
-                  htmlFor="username"
+                  htmlFor="email"
                   className="block text-sm font-semibold text-gray-700 mb-2"
                 >
-                  USERNAME
+                  EMAIL
                 </label>
                 <div className="relative">
                   <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value={formData.username}
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
                     onChange={handleInputChange}
                     required
                     className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-cyan-400 outline-none bg-transparent text-gray-700 placeholder-gray-400"
-                    placeholder="Enter your username"
+                    placeholder="Enter your email"
                   />
-                  {formData.username && (
+                  {formData.email && (
                     <AiOutlineCheck className="absolute right-3 top-3 text-cyan-400 text-xl" />
                   )}
                 </div>
@@ -191,7 +188,7 @@ const LoginPage = () => {
           <div
             className="h-full bg-cover bg-center rounded-r-3xl"
             style={{
-              backgroundImage: `url('../public/downloaded-image.jpg`,
+              backgroundImage: `url('../public/downloaded-image.jpg')`,
             }}
           />
         </div>
