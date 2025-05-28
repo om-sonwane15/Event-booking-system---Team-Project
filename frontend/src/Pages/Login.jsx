@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import axiosInstance from "../utils/axiosInstance";
 import {
   AiOutlineEye,
   AiOutlineEyeInvisible,
@@ -33,17 +34,32 @@ const LoginPage = () => {
     setErrorMsg("");
 
     try {
-      const response = await axios.post("/api/login", formData);
+      const response = await axiosInstance.post("/auth/login",
+        {
+          email: formData.email,
+          password: formData.password,
+        }
+      );
 
+      // Store user data based on remember me preference
       if (formData.rememberMe) {
         localStorage.setItem("user", JSON.stringify(response.data));
+        localStorage.setItem("token", response.data.token);
       } else {
         sessionStorage.setItem("user", JSON.stringify(response.data));
+        sessionStorage.setItem("token", response.data.token);
       }
+
+      // Set default authorization header for future requests
+      axios.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${response.data.token}`;
 
       navigate("/dashboard");
     } catch (error) {
-      setErrorMsg("Invalid credentials. Please try again.");
+      setErrorMsg(
+        error.response?.data?.msg || "Invalid credentials. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -149,12 +165,13 @@ const LoginPage = () => {
                   </span>
                 </label>
 
-                <a
-                  href="/forgot-password"
+                <button
+                  type="button"
+                  onClick={() => navigate("/forgot")}
                   className="text-sm text-gray-600 hover:text-cyan-400 underline"
                 >
                   Forgot Password
-                </a>
+                </button>
               </div>
 
               {/* Error Message */}
@@ -167,13 +184,13 @@ const LoginPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-cyan-400 hover:bg-cyan-500 text-white font-semibold py-3 px-6 rounded-full transition duration-200 shadow-lg hover:shadow-xl"
+                  className="flex-1 bg-cyan-400 hover:bg-cyan-500 disabled:bg-cyan-300 text-white font-semibold py-3 px-6 rounded-full transition duration-200 shadow-lg hover:shadow-xl"
                 >
                   {loading ? "Logging in..." : "Login"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => navigate("/signup")}
+                  onClick={() => navigate("/register")}
                   className="flex-1 border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-50 font-semibold py-3 px-6 rounded-full transition duration-200"
                 >
                   Sign Up

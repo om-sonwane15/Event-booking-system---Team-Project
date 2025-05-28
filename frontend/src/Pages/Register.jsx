@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import backgroundImg from "../assets/register.jpeg";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import axiosInstance from "../utils/axiosInstance";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +17,9 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [submitError, setSubmitError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -23,6 +27,10 @@ const Register = () => {
       ...formData,
       [name]: type === "checkbox" ? checked : value,
     });
+    // Clear specific error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
+    }
   };
 
   const validatePassword = (password) => {
@@ -36,15 +44,34 @@ const Register = () => {
 
   const validate = () => {
     const errs = {};
-    if (!formData.email) errs.email = "Email is required";
-    if (!formData.name) errs.name = "Full name is required";
+    
+    // Email validation
+    if (!formData.email) {
+      errs.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errs.email = "Email is invalid";
+    }
+    
+    // Name validation
+    if (!formData.name) {
+      errs.name = "Full name is required";
+    } else if (formData.name.trim().length < 2) {
+      errs.name = "Name must be at least 2 characters";
+    }
+    
+    // Password validation
     if (!formData.password) {
       errs.password = "Password is required";
     } else if (!validatePassword(formData.password)) {
       errs.password =
         "Password must be at least 8 characters, include uppercase, lowercase, number, and special character.";
     }
-    if (!formData.terms) errs.terms = "You must accept terms";
+    
+    // Terms validation
+    if (!formData.terms) {
+      errs.terms = "You must accept terms and conditions";
+    }
+    
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -56,12 +83,13 @@ const Register = () => {
 
     if (!validate()) return;
 
+    setLoading(true);
+
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/register`,
+      const response = await axiosInstance.post("/auth/register",
         {
-          name: formData.name,
-          email: formData.email,
+          name: formData.name.trim(),
+          email: formData.email.toLowerCase(),
           password: formData.password,
           role: formData.role,
         }
@@ -75,10 +103,18 @@ const Register = () => {
         role: "user",
         terms: false,
       });
+
+      // Redirect to login after successful registration
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+
     } catch (error) {
       setSubmitError(
         error.response?.data?.msg || "An error occurred during registration."
       );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,7 +150,7 @@ const Register = () => {
                   className="w-full border-b-2 border-gray-300 focus:outline-none focus:border-blue-400 py-2 placeholder-gray-400 rounded-md"
                 />
                 {errors.email && (
-                  <p className="text-red-500 text-sm">{errors.email}</p>
+                  <p className="text-red-500 text-sm mt-1">{errors.email}</p>
                 )}
               </div>
 
@@ -128,11 +164,11 @@ const Register = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  placeholder="Enter your name"
+                  placeholder="Enter your full name"
                   className="w-full border-b-2 border-gray-300 focus:outline-none focus:border-blue-400 py-2 placeholder-gray-400 rounded-md"
                 />
                 {errors.name && (
-                  <p className="text-red-500 text-sm">{errors.name}</p>
+                  <p className="text-red-500 text-sm mt-1">{errors.name}</p>
                 )}
               </div>
 
@@ -151,18 +187,18 @@ const Register = () => {
                 />
                 <span
                   onClick={togglePassword}
-                  className="absolute right-2 top-8 text-gray-500 cursor-pointer"
+                  className="absolute right-2 top-8 text-gray-500 cursor-pointer hover:text-gray-700"
                 >
                   {showPassword ? <FaEyeSlash /> : <FaEye />}
                 </span>
                 {errors.password && (
-                  <p className="text-red-500 text-sm">{errors.password}</p>
+                  <p className="text-red-500 text-sm mt-1">{errors.password}</p>
                 )}
               </div>
 
               {/* Role */}
               <div>
-                <label className="block text-black font-semibold mb-1/2">
+                <label className="block text-black font-semibold mb-0.5">
                   REGISTER AS
                 </label>
                 <select
@@ -177,17 +213,21 @@ const Register = () => {
               </div>
 
               {/* Terms */}
-              <div className="flex items-center">
+              <div className="flex items-start">
                 <input
                   type="checkbox"
                   name="terms"
                   checked={formData.terms}
                   onChange={handleChange}
-                  className="accent-blue-500 mr-2"
+                  className="accent-blue-500 mr-2 mt-0.5"
                 />
                 <label className="text-gray-600 text-sm">
                   I agree to the{" "}
-                  <a href="#" className="text-blue-500 underline">
+                  <a 
+                    href="#" 
+                    className="text-blue-500 underline hover:text-blue-700"
+                    onClick={(e) => e.preventDefault()}
+                  >
                     Terms & Conditions
                   </a>
                 </label>
@@ -196,24 +236,30 @@ const Register = () => {
                 <p className="text-red-500 text-sm">{errors.terms}</p>
               )}
 
-              {/* Feedback */}
+              {/* Feedback Messages */}
               {successMsg && (
-                <p className="text-green-600 text-sm">{successMsg}</p>
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md">
+                  {successMsg}
+                </div>
               )}
               {submitError && (
-                <p className="text-red-500 text-sm">{submitError}</p>
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                  {submitError}
+                </div>
               )}
 
               {/* Buttons */}
               <div className="flex space-x-4 pt-4">
                 <button
                   type="submit"
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-full font-semibold transition"
+                  disabled={loading}
+                  className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white px-6 py-2 rounded-full font-semibold transition"
                 >
-                  Sign Up
+                  {loading ? "Signing Up..." : "Sign Up"}
                 </button>
                 <button
                   type="button"
+                  onClick={() => navigate("/login")}
                   className="border border-blue-500 text-blue-500 hover:bg-blue-50 px-6 py-2 rounded-full font-semibold transition"
                 >
                   Login
