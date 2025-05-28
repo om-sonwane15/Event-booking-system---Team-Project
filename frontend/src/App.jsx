@@ -16,7 +16,7 @@ const ProtectedRoute = ({ children }) => {
 // Public Route Component (redirect if already logged in)
 const PublicRoute = ({ children }) => {
   const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-  return !token ? children : <Navigate to="/dashboard" replace />;
+  return !token ? children : <Navigate to="/home" replace />;
 };
 
 function App() {
@@ -61,7 +61,7 @@ function App() {
 
         {/* Protected Routes */}
         <Route 
-          path="/dashboard" 
+          path="/home" 
           element={
             <ProtectedRoute>
               <Home />

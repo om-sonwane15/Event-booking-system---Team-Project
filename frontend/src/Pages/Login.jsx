@@ -55,7 +55,7 @@ const LoginPage = () => {
         "Authorization"
       ] = `Bearer ${response.data.token}`;
 
-      navigate("/dashboard");
+      navigate("/home");
     } catch (error) {
       setErrorMsg(
         error.response?.data?.msg || "Invalid credentials. Please try again."
