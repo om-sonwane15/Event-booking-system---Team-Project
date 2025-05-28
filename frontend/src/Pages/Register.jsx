@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import backgroundImg from "../assets/register.jpeg";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
@@ -13,6 +14,8 @@ const Register = () => {
 
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [submitError, setSubmitError] = useState("");
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -26,6 +29,7 @@ const Register = () => {
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     return regex.test(password);
   };
+
   const togglePassword = () => {
     setShowPassword((prev) => !prev);
   };
@@ -45,11 +49,34 @@ const Register = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setSuccessMsg("");
+    setSubmitError("");
+
     if (!validate()) return;
-    alert(`Registered as ${formData.role.toUpperCase()}`);
-    console.log(formData);
+
+    try {
+      const response = await axios.post("/register", {
+        name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+      });
+
+      setSuccessMsg(response.data.msg);
+      setFormData({
+        email: "",
+        fullName: "",
+        password: "",
+        role: "user",
+        terms: false,
+      });
+    } catch (error) {
+      setSubmitError(
+        error.response?.data?.msg || "An error occurred during registration."
+      );
+    }
   };
 
   return (
@@ -70,6 +97,7 @@ const Register = () => {
           <div className="w-full md:w-1/2 p-10">
             <h2 className="text-3xl font-bold text-gray-800 mb-8">Sign Up</h2>
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Email */}
               <div>
                 <label className="block text-black font-semibold mb-0.5">
                   EMAIL ADDRESS
@@ -87,6 +115,7 @@ const Register = () => {
                 )}
               </div>
 
+              {/* Full Name */}
               <div>
                 <label className="block text-black font-semibold mb-0.5">
                   FULL NAME
@@ -104,6 +133,7 @@ const Register = () => {
                 )}
               </div>
 
+              {/* Password */}
               <div className="relative">
                 <label className="block text-black font-semibold mb-0.5">
                   PASSWORD
@@ -127,6 +157,7 @@ const Register = () => {
                 )}
               </div>
 
+              {/* Role */}
               <div>
                 <label className="block text-black font-semibold mb-1/2">
                   REGISTER AS
@@ -142,6 +173,7 @@ const Register = () => {
                 </select>
               </div>
 
+              {/* Terms */}
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -161,6 +193,15 @@ const Register = () => {
                 <p className="text-red-500 text-sm">{errors.terms}</p>
               )}
 
+              {/* Feedback */}
+              {successMsg && (
+                <p className="text-green-600 text-sm">{successMsg}</p>
+              )}
+              {submitError && (
+                <p className="text-red-500 text-sm">{submitError}</p>
+              )}
+
+              {/* Buttons */}
               <div className="flex space-x-4 pt-4">
                 <button
                   type="submit"
@@ -178,6 +219,7 @@ const Register = () => {
             </form>
           </div>
 
+          {/* Right-side image */}
           <div
             className="hidden md:block md:w-1/2 bg-cover bg-center"
             style={{ backgroundImage: `url(${backgroundImg})` }}
