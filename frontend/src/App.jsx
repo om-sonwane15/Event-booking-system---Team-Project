@@ -1,14 +1,16 @@
 import React from "react";
-import { BrowserRouter, Routes, Route} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./Pages/Login";
 import Home from "./Pages/Home";
 import ChangePassword from "./Pages/ChangePassword";
 import ForgotPassword from "./Pages/ForgotPassword";
+
 function App() {
   return (
     <BrowserRouter>
-        <Routes>
-        <Route path="/" element={<Login />} />
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Home />} />
         <Route path="/ChangePassword" element={<ChangePassword />} />
         <Route path="/forgot" element={<ForgotPassword />} />
@@ -16,4 +18,5 @@ function App() {
     </BrowserRouter>
   );
 }
+
 export default App;
