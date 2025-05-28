@@ -6,7 +6,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 const Register = () => {
   const [formData, setFormData] = useState({
     email: "",
-    fullName: "",
+    name: "",
     password: "",
     role: "user",
     terms: false,
@@ -37,7 +37,7 @@ const Register = () => {
   const validate = () => {
     const errs = {};
     if (!formData.email) errs.email = "Email is required";
-    if (!formData.fullName) errs.fullName = "Full name is required";
+    if (!formData.name) errs.name = "Full name is required";
     if (!formData.password) {
       errs.password = "Password is required";
     } else if (!validatePassword(formData.password)) {
@@ -57,17 +57,20 @@ const Register = () => {
     if (!validate()) return;
 
     try {
-      const response = await axios.post("/register", {
-        name: formData.fullName,
-        email: formData.email,
-        password: formData.password,
-        role: formData.role,
-      });
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/register`,
+        {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          role: formData.role,
+        }
+      );
 
       setSuccessMsg(response.data.msg);
       setFormData({
         email: "",
-        fullName: "",
+        name: "",
         password: "",
         role: "user",
         terms: false,
@@ -115,21 +118,21 @@ const Register = () => {
                 )}
               </div>
 
-              {/* Full Name */}
+              {/* Name */}
               <div>
                 <label className="block text-black font-semibold mb-0.5">
                   FULL NAME
                 </label>
                 <input
                   type="text"
-                  name="fullName"
-                  value={formData.fullName}
+                  name="name"
+                  value={formData.name}
                   onChange={handleChange}
                   placeholder="Enter your name"
                   className="w-full border-b-2 border-gray-300 focus:outline-none focus:border-blue-400 py-2 placeholder-gray-400 rounded-md"
                 />
-                {errors.fullName && (
-                  <p className="text-red-500 text-sm">{errors.fullName}</p>
+                {errors.name && (
+                  <p className="text-red-500 text-sm">{errors.name}</p>
                 )}
               </div>
 
