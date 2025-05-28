@@ -1,28 +1,31 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-// import axiosInstance from "../utils/axiosInstance";
+import axiosInstance from "../utils/axiosInstance";
 import { FiArrowRight, FiLogIn, FiMail } from "react-icons/fi";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const handleForgot = async (e) => {
-    e.preventDefault();
-    setLoading(true);
 
-    try {
-      //api call
-      toast.success("Reset link sent to your email!");
-      setEmail("");
-    } catch (err) {
-      toast.error("Something went wrong. Try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
+ const handleForgot = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    const response = await axiosInstance.post("/auth/forgot-password", { email }); 
+    toast.success(response.data.msg || "Reset link sent to your email!");
+    setEmail("");
+  } catch (err) {
+    console.error(err);
+    const msg = err.response?.data?.msg || "Something went wrong. Try again later.";
+    toast.error(msg);
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div
       className="min-h-screen flex items-center justify-center bg-cover bg-center px-4 sm:px-6"
@@ -43,9 +46,9 @@ const ForgotPassword = () => {
                 className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 bg-white text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-cyan-500"/>
             </div>
             <button type="submit"disabled={loading}
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-full text-white font-semibold text-sm sm:text-base transition-all duration-200 ${
+              className={`w-full flex items-center justify-center cursor-pointer gap-2 py-3 rounded-full text-white font-semibold text-sm sm:text-base transition-all duration-200 ${
                 loading
-                  ? "bg-cyan-400 cursor-not-allowed"
+                  ? "bg-cyan-400 cursor-not-allowed" 
                   : "bg-cyan-600 hover:bg-cyan-700 active:bg-cyan-800"
               }`}>
               {loading ? "Sending..." : "Send Reset Link"}
@@ -54,7 +57,7 @@ const ForgotPassword = () => {
           </form>
           <div className="mt-6 text-center text-sm text-gray-600">Remembered your password?
             <button type="button" onClick={() => navigate("/")}
-              className="ml-1 text-cyan-600 font-semibold inline-flex items-center gap-1 hover:underline">
+              className="ml-1 text-cyan-600 font-semibold cursor-pointer inline-flex items-center gap-1 hover:underline">
               <FiLogIn /> Login here
             </button>
           </div>
@@ -63,6 +66,7 @@ const ForgotPassword = () => {
           <img src="/fp.jpg" alt="Scenic Background"className="w-full h-full object-cover"/>
         </div>
       </div>
+      <ToastContainer position="top-center" autoClose={3000} />
     </div>
   );
 };

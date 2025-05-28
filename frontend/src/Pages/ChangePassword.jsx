@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-// import axiosInstance from "../utils/axiosInstance";
+import axiosInstance from "../utils/axiosInstance";
 import { FaEye, FaEyeSlash, FaLock } from "react-icons/fa";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
 const ChangePassword = () => {
@@ -16,33 +16,46 @@ const ChangePassword = () => {
 
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsLoading(true);
 
-    if (newPassword !== confirmPassword) {
-      toast.error("New passwords do not match!");
-      setIsLoading(false);
-      return;
-    }
+  if (!oldPassword || !newPassword || !confirmPassword) {
+    toast.error("All fields are required!");
+    setIsLoading(false);
+    return;
+  }
 
-    try{
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  if (newPassword !== confirmPassword) {
+    toast.error("New passwords do not match!");
+    setIsLoading(false);
+    return;
+  }
 
-      toast.success("Password changed successfully!");
-      setOldPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
-    } catch (err) {
-      console.error(err);
-      toast.error("An error occurred while changing the password.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  try {
+    const response = await axiosInstance.post("/auth/change-password", {
+      oldPassword,
+      newPassword,
+    });
+  
+    toast.success(response.data.msg || "Password changed successfully!");
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+
+    setTimeout(() => {
+      navigate("/");
+    }, 2000);
+  } catch (err) {
+
+    const message =
+      err.response?.data?.msg || "An error occurred while changing the password.";
+    toast.error(message);
+    console.error("Change password error:", err);
+  } finally {
+    setIsLoading(false);
+  }
+};
   const renderPasswordField = (label, value, setValue, show, setShow, id, placeholder) => (
     <div className="mb-4">
       <label htmlFor={id} className="block text-gray-700 font-medium mb-2 text-sm sm:text-base">{label}</label>
@@ -73,7 +86,7 @@ const ChangePassword = () => {
             {renderPasswordField("New Password", newPassword, setNewPassword, showNew, setShowNew, "newPassword", "Enter new password")}
             {renderPasswordField("Confirm Password", confirmPassword, setConfirmPassword, showConfirm, setShowConfirm, "confirmPassword", "Confirm new password")}
             <button type="submit" disabled={isLoading}
-              className={`w-full py-3 rounded-full text-white font-semibold text-sm sm:text-base transition-all duration-200 ${
+              className={`w-full py-3 rounded-full text-white font-semibold cursor-pointer text-sm sm:text-base transition-all duration-200 ${
                 isLoading ? "bg-cyan-400 cursor-not-allowed" : "bg-cyan-600 hover:bg-cyan-700 active:bg-cyan-800"
               }`} >
               {isLoading ? "Updating..." : "Update Password"}
@@ -84,6 +97,7 @@ const ChangePassword = () => {
           <img src="/cp.jpg" alt="Scenic Background"className="w-full h-full object-cover" />
         </div>
       </div>
+      <ToastContainer position="top-center" autoClose={3000} />
     </div>
   );
 };
