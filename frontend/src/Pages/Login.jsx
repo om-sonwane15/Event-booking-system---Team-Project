@@ -58,7 +58,7 @@ const LoginPage = () => {
   return (
     <div
       className="min-h-screen flex items-center justify-center bg-cover bg-center px-4 sm:px-6"
-      style={{ backgroundImage: `url('/spotlight.jpg')` }}
+      style={{ backgroundImage: `url('/mountains.jpg')` }}
     >
       <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-5xl flex flex-col md:flex-row">
         {/* Left Side - Form */}
