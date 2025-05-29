@@ -23,35 +23,6 @@ const validatePassword = (password) => {
   );
 };
 
-// Update Profile (name + picture)
-router.put('/profile', verifyToken, upload.single('profilePic'), async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const { name } = req.body;
-
-        let updateData = {};
-        if (name) updateData.name = name;
-
-        if (req.file) {
-            const imagePath = `/uploads/${req.file.filename}`;
-            updateData.profilePic = imagePath;
-        }
-
-        const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
-        res.json({
-            msg: 'Profile updated successfully',
-            user: {
-                id: updatedUser._id,
-                name: updatedUser.name,
-                email: updatedUser.email,
-                role: updatedUser.role,
-                profilePic: updatedUser.profilePic
-            }
-        });
-    } catch (err) {
-        res.status(500).json({ msg: 'Server error', error: err.message });
-    }
-});
 
 // Register
 router.post('/register', async (req, res) => {
@@ -130,10 +101,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Admin-only route
-router.get('/admin', verifyToken, isAdmin, (req, res) => {
-  res.status(200).json({ msg: 'Welcome Admin!' });
-});
 
 // Temporary store for reset tokens
 const resetTokens = {};
