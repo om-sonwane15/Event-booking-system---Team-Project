@@ -190,7 +190,7 @@ router.post('/reset-password', async (req, res) => {
 
     if (!validatePassword(newPassword)) {
       return res.status(400).json({
-        msg: 'New password must be 8-16 characters and include at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character',
+        msg: 'New password must be atleast 8 characters and include at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character',
       });
     }
 
@@ -242,7 +242,7 @@ router.post('/change-password', verifyToken, async (req, res) => {
 
     if (!validatePassword(newPassword)) {
       return res.status(400).json({
-        msg: 'New password must be 8-16 characters and include at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character',
+        msg: 'New password must be atleast 8 characters and include at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character',
       });
     }
 
