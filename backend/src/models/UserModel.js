@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema(
             required: [true, 'Name is required'],
             trim: true,
             minlength: [2, 'Name must be at least 2 characters'],
-            maxlength: [50, 'Name must be at most 50 characters'],
+            
             validate: {
                 validator: function (v) {
                     // Only allow letters and spaces
