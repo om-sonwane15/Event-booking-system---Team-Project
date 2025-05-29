@@ -9,13 +9,15 @@ import ResetPassword from "./Pages/ResetPassword";
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  const token =
+    localStorage.getItem("token") || sessionStorage.getItem("token");
   return token ? children : <Navigate to="/login" replace />;
 };
 
 // Public Route Component (redirect if already logged in)
 const PublicRoute = ({ children }) => {
-  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  const token =
+    localStorage.getItem("token") || sessionStorage.getItem("token");
   return !token ? children : <Navigate to="/home" replace />;
 };
 
@@ -24,57 +26,63 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
-        
+
         {/* Public Routes */}
-        <Route 
-          path="/login" 
+        <Route
+          path="/login"
           element={
             <PublicRoute>
               <Login />
             </PublicRoute>
-          } 
+          }
         />
-        <Route 
-          path="/register" 
+        <Route
+          path="/register"
           element={
             <PublicRoute>
               <Register />
             </PublicRoute>
-          } 
+          }
         />
-        <Route 
-          path="/forgot" 
+        <Route path="/register-user" element={<Register rolePreset="user" />} />
+        <Route
+          path="/register-admin"
+          element={<Register rolePreset="admin" />}
+        />
+
+        <Route
+          path="/forgot"
           element={
             <PublicRoute>
               <ForgotPassword />
             </PublicRoute>
-          } 
+          }
         />
-        <Route 
-          path="/reset-password/:token" 
+        <Route
+          path="/reset-password/:token"
           element={
             <PublicRoute>
               <ResetPassword />
             </PublicRoute>
-          } 
+          }
         />
 
         {/* Protected Routes */}
-        <Route 
-          path="/home" 
+        <Route
+          path="/home"
           element={
             <ProtectedRoute>
               <Home />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/change-password" 
+        <Route
+          path="/change-password"
           element={
             <ProtectedRoute>
               <ChangePassword />
             </ProtectedRoute>
-          } 
+          }
         />
 
         {/* Catch all route */}
