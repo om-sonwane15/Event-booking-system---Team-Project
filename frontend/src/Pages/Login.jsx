@@ -205,7 +205,7 @@ const LoginPage = () => {
           <div
             className="h-full bg-cover bg-center rounded-r-3xl"
             style={{
-              backgroundImage: `url('../public/downloaded-image.jpg')`,
+              backgroundImage: `url('../downloaded-image.jpg')`,
             }}
           />
         </div>
