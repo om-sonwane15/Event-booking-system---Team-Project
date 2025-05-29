@@ -79,15 +79,22 @@ router.post('/login', async (req, res) => {
       { expiresIn: '1d' }
     );
 
-        res.status(200).json({
-            msg: 'Login successful',
-            token,
-            user: { id: user._id, name: user.name, email: user.email, role: user.role },
-        });
-    } catch (err) {
-        console.error('Error in login:', err);
-        res.status(500).json({ msg: 'Server error during login', error: err.message });
-    }
+    res.status(200).json({
+      msg: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error('Error in login:', err);
+    res
+      .status(500)
+      .json({ msg: 'Server error during login', error: err.message });
+  }
 });
 
 // Admin-only route
