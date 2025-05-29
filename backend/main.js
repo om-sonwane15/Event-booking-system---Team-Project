@@ -25,6 +25,9 @@ app.use('/uploads', express.static(uploadsDir));
 const authRoutes = require('./src/routes/authRoutes');
 app.use('/api/auth', authRoutes);
 
+const userRoutes = require('./src/routes/userRoutes.js');
+app.use('/api/user', userRoutes);
+
 // Default Route
 app.get('/', (req, res) => {
     res.status(200).send('Event Management API is running...');

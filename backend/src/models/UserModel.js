@@ -19,9 +19,9 @@ const UserSchema = new mongoose.Schema(
         phone: {
             type: String,
             trim: true,
-            match: [/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number'],
             default: null,
         },
+
         bio: {
             type: String,
             trim: true,
@@ -33,9 +33,9 @@ const UserSchema = new mongoose.Schema(
             enum: ['user', 'admin'],
             default: 'user',
         },
-        profilePic: { 
+        profilePic: {
             type: String,
-            default: '' 
+            default: ''
         },
         email: {
             type: String,
@@ -51,20 +51,6 @@ const UserSchema = new mongoose.Schema(
         password: {
             type: String,
             required: [true, 'Password is required'],
-            minlength: [8, 'Password must be at least 8 characters'],
-            validate: {
-                validator: function (v) {
-                    // Password must contain at least 1 uppercase, 1 lowercase, 1 number, and 1 special character
-                    return (
-                        /[a-z]/.test(v) &&
-                        /[A-Z]/.test(v) &&
-                        /[0-9]/.test(v) &&
-                        /[^A-Za-z0-9]/.test(v)
-                    );
-                },
-                message:
-                    'Password must include at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character',
-            },
         }
     },
     { timestamps: true }
