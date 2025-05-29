@@ -108,7 +108,7 @@ const handleSubmit = async (e) => {
           <img src="/cp.jpg" alt="Scenic Background"className="w-full h-full object-cover" />
         </div>
       </div>
-      <ToastContainer position="top-center" autoClose={3000} />
+      <ToastContainer position="top-center" autoClose={3000} limit={3} />
     </div>
   );
 };

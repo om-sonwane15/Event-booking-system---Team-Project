@@ -77,7 +77,7 @@ const ForgotPassword = () => {
           <img src="/fp.jpg" alt="Scenic Background" className="w-full h-full object-cover"/>
         </div>
       </div>
-      <ToastContainer position="top-center" autoClose={3000} />
+      <ToastContainer position="top-center" autoClose={3000} limit={3} />
     </div>
   );
 };
