@@ -1,9 +1,17 @@
 const express = require('express');
 require('dotenv').config();
-const dbConnect = require('./src/config/dbConnect.js');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 
-// Connect to DB
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir);
+}
+
+// DB Connection
+const dbConnect = require('./src/config/dbConnect.js');
 dbConnect();
 
 const app = express();
@@ -11,6 +19,7 @@ const app = express();
 // Middleware
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
+app.use('/uploads', express.static(uploadsDir));
 
 // Routes
 const authRoutes = require('./src/routes/authRoutes');
@@ -21,11 +30,10 @@ app.get('/', (req, res) => {
     res.status(200).send('Event Management API is running...');
 });
 
-// Handle 404s
+// 404 Handler
 app.use((req, res) => {
     res.status(404).json({ msg: 'Endpoint not found' });
 });
-
 
 // Start Server
 const PORT = process.env.PORT || 5000;

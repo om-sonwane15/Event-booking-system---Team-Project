@@ -4,6 +4,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const transporter = require('../config/mailConnect');
 const User = require('../models/UserModel');
+const upload = require('../middleware/uploadMiddleware');
+const fs = require('fs');
+const path = require('path');
 const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -19,6 +22,36 @@ const validatePassword = (password) => {
     hasLowercase && hasUppercase && hasNumber && hasSpecialChar && validLength
   );
 };
+
+// Update Profile (name + picture)
+router.put('/profile', verifyToken, upload.single('profilePic'), async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { name } = req.body;
+
+        let updateData = {};
+        if (name) updateData.name = name;
+
+        if (req.file) {
+            const imagePath = `/uploads/${req.file.filename}`;
+            updateData.profilePic = imagePath;
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(userId, updateData, { new: true });
+        res.json({
+            msg: 'Profile updated successfully',
+            user: {
+                id: updatedUser._id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                profilePic: updatedUser.profilePic
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ msg: 'Server error', error: err.message });
+    }
+});
 
 // Register
 router.post('/register', async (req, res) => {
