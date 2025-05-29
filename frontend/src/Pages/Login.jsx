@@ -34,26 +34,16 @@ const LoginPage = () => {
     setErrorMsg("");
 
     try {
-      const response = await axiosInstance.post("/auth/login",
-        {
-          email: formData.email,
-          password: formData.password,
-        }
-      );
+      const response = await axiosInstance.post("/auth/login", {
+        email: formData.email,
+        password: formData.password,
+      });
 
-      // Store user data based on remember me preference
-      if (formData.rememberMe) {
-        localStorage.setItem("user", JSON.stringify(response.data));
-        localStorage.setItem("token", response.data.token);
-      } else {
-        sessionStorage.setItem("user", JSON.stringify(response.data));
-        sessionStorage.setItem("token", response.data.token);
-      }
+      const storage = formData.rememberMe ? localStorage : sessionStorage;
+      storage.setItem("user", JSON.stringify(response.data));
+      storage.setItem("token", response.data.token);
 
-      // Set default authorization header for future requests
-      axios.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${response.data.token}`;
+      axios.defaults.headers.common["Authorization"] = `Bearer ${response.data.token}`;
 
       navigate("/home");
     } catch (error) {
@@ -67,24 +57,19 @@ const LoginPage = () => {
 
   return (
     <div
-      className="min-h-screen w-full flex items-center justify-center bg-cover bg-center bg-no-repeat"
-      style={{
-        backgroundImage: `url('/spotlight.jpg')`,
-      }}
+      className="min-h-screen flex items-center justify-center bg-cover bg-center px-4 sm:px-6"
+      style={{ backgroundImage: `url('/spotlight.jpg')` }}
     >
-      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-4xl w-full mx-4 flex">
+      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-5xl flex flex-col md:flex-row">
         {/* Left Side - Form */}
-        <div className="w-full md:w-1/2 p-8 md:p-12">
+        <div className="w-full md:w-1/2 p-8 sm:p-10 lg:p-12">
           <div className="max-w-md mx-auto">
             <h1 className="text-3xl font-bold text-gray-800 mb-8">Login</h1>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Email */}
               <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
-                >
+                <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                   EMAIL
                 </label>
                 <div className="relative">
@@ -95,21 +80,18 @@ const LoginPage = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-cyan-400 outline-none bg-transparent text-gray-700 placeholder-gray-400"
+                    className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-[#007595] outline-none bg-transparent text-gray-700 placeholder-gray-400"
                     placeholder="Enter your email"
                   />
                   {formData.email && (
-                    <AiOutlineCheck className="absolute right-3 top-3 text-cyan-400 text-xl" />
+                    <AiOutlineCheck className="absolute right-3 top-3 text-[#007595] text-xl" />
                   )}
                 </div>
               </div>
 
               {/* Password */}
               <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-semibold text-gray-700 mb-2"
-                >
+                <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
                   PASSWORD
                 </label>
                 <div className="relative">
@@ -120,7 +102,7 @@ const LoginPage = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-cyan-400 outline-none bg-transparent text-gray-700 placeholder-gray-400"
+                    className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-[#007595] outline-none bg-transparent text-gray-700 placeholder-gray-400"
                     placeholder="••••••••••"
                   />
                   <button
@@ -139,36 +121,20 @@ const LoginPage = () => {
 
               {/* Remember Me & Forgot Password */}
               <div className="flex items-center justify-between">
-                <label className="flex items-center cursor-pointer">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      name="rememberMe"
-                      checked={formData.rememberMe}
-                      onChange={handleInputChange}
-                      className="sr-only"
-                    />
-                    <div
-                      className={`w-5 h-5 rounded border-2 ${
-                        formData.rememberMe
-                          ? "bg-cyan-400 border-cyan-400"
-                          : "border-gray-300"
-                      } flex items-center justify-center`}
-                    >
-                      {formData.rememberMe && (
-                        <AiOutlineCheck className="text-white text-sm" />
-                      )}
-                    </div>
-                  </div>
-                  <span className="ml-3 text-sm text-gray-600">
-                    Remember me
-                  </span>
+                <label className="flex items-center space-x-3 cursor-pointer text-sm text-gray-600">
+                  <input
+                    type="checkbox"
+                    name="rememberMe"
+                    checked={formData.rememberMe}
+                    onChange={handleInputChange}
+                    className="h-5 w-5 text-[#007595] border-gray-300 rounded"
+                  />
+                  <span>Remember me</span>
                 </label>
-
                 <button
                   type="button"
                   onClick={() => navigate("/forgot")}
-                  className="text-sm text-gray-600 hover:text-cyan-400 underline"
+                  className="text-sm text-gray-600 hover:text-[#007595] underline"
                 >
                   Forgot Password
                 </button>
@@ -179,19 +145,19 @@ const LoginPage = () => {
                 <div className="text-sm text-red-500">{errorMsg}</div>
               )}
 
-              {/* Submit Buttons */}
-              <div className="flex gap-4 pt-4">
+              {/* Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-cyan-400 hover:bg-cyan-500 disabled:bg-cyan-300 text-white font-semibold py-3 px-6 rounded-full transition duration-200 shadow-lg hover:shadow-xl"
+                  className="flex-1 bg-[#007595] hover:bg-[#005d78] disabled:bg-opacity-50 text-white font-semibold py-3 px-6 rounded-full transition duration-200 shadow-lg"
                 >
                   {loading ? "Logging in..." : "Login"}
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate("/register")}
-                  className="flex-1 border-2 border-cyan-400 text-cyan-400 hover:bg-cyan-50 font-semibold py-3 px-6 rounded-full transition duration-200"
+                  className="flex-1 border-2 border-[#007595] text-[#007595] hover:bg-[#e0f5f9] font-semibold py-3 px-6 rounded-full transition duration-200"
                 >
                   Sign Up
                 </button>
@@ -203,10 +169,8 @@ const LoginPage = () => {
         {/* Right Side - Image */}
         <div className="hidden md:block md:w-1/2">
           <div
-            className="h-full bg-cover bg-center rounded-r-3xl"
-            style={{
-              backgroundImage: `url('../downloaded-image.jpg')`,
-            }}
+            className="h-full bg-cover bg-center rounded-b-3xl md:rounded-r-3xl md:rounded-bl-none"
+            style={{ backgroundImage: `url('../login-vector.jpg')` }}
           />
         </div>
       </div>
