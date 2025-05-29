@@ -28,15 +28,14 @@ const UserSchema = new mongoose.Schema(
             maxlength: [500, 'Bio must be at most 500 characters'],
             default: '',
         },
-        userImage: {
-            type: String,
-            trim: true,
-            default: '',
-        },
         role: {
             type: String,
             enum: ['user', 'admin'],
             default: 'user',
+        },
+        profilePic: { 
+            type: String,
+            default: '' 
         },
         email: {
             type: String,
