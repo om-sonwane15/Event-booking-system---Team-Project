@@ -13,13 +13,11 @@ const ChangePassword = () => {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
   const navigate = useNavigate();
 
 const handleSubmit = async (e) => {
   e.preventDefault();
   setIsLoading(true);
-
   if (!oldPassword || !newPassword || !confirmPassword) {
     toast.error("All fields are required!");
     setIsLoading(false);
@@ -31,15 +29,19 @@ const handleSubmit = async (e) => {
     setIsLoading(false);
     return;
   }
-
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+  if (!passwordRegex.test(newPassword)) {
+    toast.error("New password must be at least 8 characters long and include uppercase, lowercase, number, and special character.");
+    setIsLoading(false);
+    return;
+  }
   try {
-    const token = sessionStorage.getItem("token")||localStorage.getItem("token")
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
     if (!token) {
       toast.error("User is not authenticated. Please login again.");
       setIsLoading(false);
       return;
     }
-
     const response = await axiosInstance.post(
       "/auth/change-password",
       { oldPassword, newPassword },
@@ -49,12 +51,10 @@ const handleSubmit = async (e) => {
         },
       }
     );
-
     toast.success(response.data.msg || "Password changed successfully!");
     setOldPassword("");
     setNewPassword("");
     setConfirmPassword("");
-
     setTimeout(() => {
       navigate("/");
     }, 2000);
