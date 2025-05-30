@@ -1,3 +1,4 @@
+// src/routes/eventRoutes.js 
 const express = require('express');
 const router = express.Router();
 const Event = require('../models/EventModel');
