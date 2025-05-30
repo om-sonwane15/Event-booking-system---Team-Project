@@ -1,15 +1,16 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import backgroundImg from "../assets/register.jpeg";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axiosInstance from "../utils/axiosInstance";
 
-const Register = () => {
+
+const Register = ({ rolePreset = "user" }) => {
   const [formData, setFormData] = useState({
     email: "",
     name: "",
     password: "",
-    role: "user",
+    role: rolePreset,
     terms: false,
   });
 
@@ -20,58 +21,60 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const isAdmin = rolePreset === "admin";
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: type === "checkbox" ? checked : value,
-    });
-    // Clear specific error when user starts typing
+    }));
+
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: "" }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
-  const validatePassword = (password) => {
-    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-    return regex.test(password);
-  };
+//   const validatePassword = (password) => {
+//     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+//     return regex.test(password);
+//   };
 
-  const togglePassword = () => {
-    setShowPassword((prev) => !prev);
-  };
+function validatePassword(password) {
+  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+  return regex.test(password);
+}
+
+
+  const togglePassword = () => setShowPassword((prev) => !prev);
 
   const validate = () => {
     const errs = {};
-    
-    // Email validation
+
     if (!formData.email) {
       errs.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       errs.email = "Email is invalid";
     }
-    
-    // Name validation
+
     if (!formData.name) {
       errs.name = "Full name is required";
     } else if (formData.name.trim().length < 2) {
       errs.name = "Name must be at least 2 characters";
     }
-    
-    // Password validation
+
     if (!formData.password) {
       errs.password = "Password is required";
-    } else if (!validatePassword(formData.password)) {
+    } 
+    else if (!validatePassword(formData.password)) {
       errs.password =
         "Password must be at least 8 characters, include uppercase, lowercase, number, and special character.";
     }
-    
-    // Terms validation
+
     if (!formData.terms) {
       errs.terms = "You must accept terms and conditions";
     }
-    
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -82,33 +85,33 @@ const Register = () => {
     setSubmitError("");
 
     if (!validate()) return;
-
     setLoading(true);
 
     try {
-      const response = await axiosInstance.post("/auth/register",
-        {
-          name: formData.name.trim(),
-          email: formData.email.toLowerCase(),
-          password: formData.password,
-          role: formData.role,
-        }
+      const response = await axiosInstance.post("/auth/register", {
+        name: formData.name.trim(),
+        email: formData.email.toLowerCase(),
+        password: formData.password,
+        role: formData.role,
+      });
+
+      setSuccessMsg(
+        formData.role === "admin"
+          ? "Admin registered successfully! Please login to continue."
+          : "User registered successfully! Please login to continue."
       );
 
-      setSuccessMsg(response.data.msg);
       setFormData({
         email: "",
         name: "",
         password: "",
-        role: "user",
+        role: rolePreset,
         terms: false,
       });
 
-      // Redirect to login after successful registration
       setTimeout(() => {
         navigate("/login");
       }, 2000);
-
     } catch (error) {
       setSubmitError(
         error.response?.data?.msg || "An error occurred during registration."
@@ -119,35 +122,48 @@ const Register = () => {
   };
 
   return (
-    <>
-      <div
-        className="fixed top-0 left-0 w-full h-full"
-        style={{
-          backgroundImage: `url(${backgroundImg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          filter: "blur(6px)",
-          zIndex: -1,
-        }}
-      ></div>
+    <div
+      className="min-h-screen w-full flex items-center justify-center bg-cover bg-center bg-no-repeat"
+      style={{
+        backgroundImage: `url('/rb.avif')` ,
+      }}
+    >
+      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden max-w-4xl w-full mx-4 flex">
+        {/* Left Side - Form */}
+        <div className="w-full md:w-1/2 p-8 md:p-12">
+          <div className="max-w-md mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-800">
+                {isAdmin ? "SignUp as Admin" : "SignUp as User "}
+              </h2>
+              <button
+                onClick={() =>
+                  navigate(isAdmin ? "/register-user" : "/register-admin")
+                }
+                className="border border-cyan-400 text-cyan-400 hover:bg-cyan-50 px-3 py-1 rounded-full text-sm transition"
+                type="button"
+              >
+                {isAdmin ? "SignUp as User" : "SignUp as Admin"}
+              </button>
+            </div>
 
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="relative flex bg-white rounded-3xl shadow-lg overflow-hidden max-w-4xl w-full mx-auto z-10">
-          <div className="w-full md:w-1/2 p-10">
-            <h2 className="text-3xl font-bold text-gray-800 mb-8">Sign Up</h2>
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* Email */}
               <div>
-                <label className="block text-black font-semibold mb-0.5">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-semibold text-gray-700 mb-2"
+                >
                   EMAIL ADDRESS
                 </label>
                 <input
                   type="email"
+                  id="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Enter your email"
-                  className="w-full border-b-2 border-gray-300 focus:outline-none focus:border-blue-400 py-2 placeholder-gray-400 rounded-md"
+                  className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-cyan-400 outline-none bg-transparent text-gray-700 placeholder-gray-400 rounded"
                 />
                 {errors.email && (
                   <p className="text-red-500 text-sm mt-1">{errors.email}</p>
@@ -156,16 +172,20 @@ const Register = () => {
 
               {/* Name */}
               <div>
-                <label className="block text-black font-semibold mb-0.5">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-semibold text-gray-700 mb-2"
+                >
                   FULL NAME
                 </label>
                 <input
                   type="text"
+                  id="name"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Enter your full name"
-                  className="w-full border-b-2 border-gray-300 focus:outline-none focus:border-blue-400 py-2 placeholder-gray-400 rounded-md"
+                  className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-cyan-400 outline-none bg-transparent text-gray-700 placeholder-gray-400 rounded"
                 />
                 {errors.name && (
                   <p className="text-red-500 text-sm mt-1">{errors.name}</p>
@@ -173,59 +193,58 @@ const Register = () => {
               </div>
 
               {/* Password */}
-              <div className="relative">
-                <label className="block text-black font-semibold mb-0.5">
+              <div>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-semibold text-gray-700 mb-2"
+                >
                   PASSWORD
                 </label>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                  className="w-full border-b-2 border-gray-300 focus:outline-none focus:border-blue-400 py-1.5 pr-10 placeholder-gray-400 rounded-md"
-                />
-                <span
-                  onClick={togglePassword}
-                  className="absolute right-2 top-8 text-gray-500 cursor-pointer hover:text-gray-700"
-                >
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
-                </span>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-cyan-400 outline-none bg-transparent text-gray-700 placeholder-gray-400 rounded"
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePassword}
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? (
+                      <FaEyeSlash className="text-xl" />
+                    ) : (
+                      <FaEye className="text-xl" />
+                    )}
+                  </button>
+                </div>
                 {errors.password && (
                   <p className="text-red-500 text-sm mt-1">{errors.password}</p>
                 )}
               </div>
 
-              {/* Role */}
-              <div>
-                <label className="block text-black font-semibold mb-0.5">
-                  REGISTER AS
-                </label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full border-b-2 border-gray-300 py-2 focus:outline-none focus:border-blue-400 rounded-md"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-
               {/* Terms */}
-              <div className="flex items-start">
+              <div className="flex items-center">
                 <input
                   type="checkbox"
+                  id="terms"
                   name="terms"
                   checked={formData.terms}
                   onChange={handleChange}
-                  className="accent-blue-500 mr-2 mt-0.5"
+                  className="accent-cyan-400 mr-2 mt-0.5"
                 />
-                <label className="text-gray-600 text-sm">
+                <label
+                  htmlFor="terms"
+                  className="text-gray-600 text-sm cursor-pointer"
+                >
                   I agree to the{" "}
-                  <a 
-                    href="#" 
-                    className="text-blue-500 underline hover:text-blue-700"
+                  <a
+                    href="#"
+                    className="text-cyan-500 underline hover:text-cyan-700"
                     onClick={(e) => e.preventDefault()}
                   >
                     Terms & Conditions
@@ -236,7 +255,7 @@ const Register = () => {
                 <p className="text-red-500 text-sm">{errors.terms}</p>
               )}
 
-              {/* Feedback Messages */}
+              {/* Feedback */}
               {successMsg && (
                 <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md">
                   {successMsg}
@@ -249,33 +268,38 @@ const Register = () => {
               )}
 
               {/* Buttons */}
+              {/* Buttons */}
               <div className="flex space-x-4 pt-4">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white px-6 py-2 rounded-full font-semibold transition"
+                  className=" bg-[#007595] hover:bg-[#005d78] disabled:bg-opacity-50 text-white px-6 py-3 rounded-full font-semibold transition"
                 >
                   {loading ? "Signing Up..." : "Sign Up"}
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate("/login")}
-                  className="border border-blue-500 text-blue-500 hover:bg-blue-50 px-6 py-2 rounded-full font-semibold transition"
+                  className="border-2 border-[#007595] text-[#007595] hover:bg-[#e0f5f9] font-semibold px-6 py-3 rounded-full transition duration-200"
                 >
                   Login
                 </button>
               </div>
             </form>
           </div>
-
-          {/* Right-side image */}
-          <div
-            className="hidden md:block md:w-1/2 bg-cover bg-center"
-            style={{ backgroundImage: `url(${backgroundImg})` }}
-          />
         </div>
+
+        {/* Right Side - Image */}
+        <div
+          className="hidden md:block md:w-1/2"
+          style={{
+            backgroundImage: `url('/cp.jpg')` ,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        ></div>
       </div>
-    </>
+    </div>
   );
 };
 
