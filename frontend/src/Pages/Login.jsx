@@ -29,31 +29,41 @@ const LoginPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrorMsg("");
+  e.preventDefault();
+  setLoading(true);
+  setErrorMsg("");
 
-    try {
-      const response = await axiosInstance.post("/auth/login", {
-        email: formData.email,
-        password: formData.password,
-      });
+  try {
+    const response = await axiosInstance.post("/auth/login", {
+      email: formData.email,
+      password: formData.password,
+    });
 
-      const storage = formData.rememberMe ? localStorage : sessionStorage;
-      storage.setItem("user", JSON.stringify(response.data));
-      storage.setItem("token", response.data.token);
+    const { token, user } = response.data;
 
-      axios.defaults.headers.common["Authorization"] = `Bearer ${response.data.token}`;
+    const storage = formData.rememberMe ? localStorage : sessionStorage;
+    storage.setItem("token", token);
+    storage.setItem("user", JSON.stringify(user));
 
-      navigate("/home");
-    } catch (error) {
-      setErrorMsg(
-        error.response?.data?.msg || "Invalid credentials. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+    // Redirect based on role
+    if (user.role === "admin") {
+      navigate("/admin");
+    } else if (user.role === "user") {
+        navigate("/user");
+      } else {
+        setErrorMsg("Unauthorized role");
+      }
+
+  } catch (error) {
+    setErrorMsg(
+      error.response?.data?.msg || "Invalid credentials. Please try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div
