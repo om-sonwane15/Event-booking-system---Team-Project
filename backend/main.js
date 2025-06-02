@@ -31,6 +31,9 @@ app.use('/api/user', userRoutes);
 const eventRoutes = require('./src/routes/eventRoutes');
 app.use('/api/events', eventRoutes);
 
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
+
 // Default Route
 app.get('/', (req, res) => {
     res.status(200).send('Event Management API is running...');
