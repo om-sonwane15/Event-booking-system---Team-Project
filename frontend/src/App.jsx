@@ -1,32 +1,55 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+
 import Login from "./Pages/Login";
+import Register from "./Pages/Register";
+import ForgotPassword from "./Pages/ForgotPassword";
+import ResetPassword from "./Pages/ResetPassword";
 import Home from "./Pages/Home";
 import ChangePassword from "./Pages/ChangePassword";
-import ForgotPassword from "./Pages/ForgotPassword";
-import Register from "./Pages/Register";
-import ResetPassword from "./Pages/ResetPassword";
 
-// Protected Route Component
+import AdminDashboard from "./Pages/AdminDashboard"; 
+import UserDashboard from "./Pages/UserDashboard";
+import Navbar from "./Components/Navbar";
+
 const ProtectedRoute = ({ children }) => {
-  const token =
-    localStorage.getItem("token") || sessionStorage.getItem("token");
+  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
   return token ? children : <Navigate to="/login" replace />;
 };
 
-// Public Route Component (redirect if already logged in)
 const PublicRoute = ({ children }) => {
-  const token =
-    localStorage.getItem("token") || sessionStorage.getItem("token");
-  return !token ? children : <Navigate to="/home" replace />;
+  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  return !token ? children : <Navigate to="/dashboard" replace />;
+};
+
+const AppLayout = ({ children }) => {
+  const location = useLocation();
+  const hideNavbarRoutes = ["/login", "/register", "/forgot", "/reset-password"];
+
+  const shouldHideNavbar = hideNavbarRoutes.some(route =>
+    location.pathname.startsWith(route)
+  );
+
+  return (
+    <div className="flex flex-col h-screen">
+      {!shouldHideNavbar && <Navbar />}
+      <main className="flex-1 p-6 overflow-auto bg-gray-100">
+        {children}
+      </main>
+    </div>
+  );
 };
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-
         {/* Public Routes */}
         <Route
           path="/login"
@@ -44,12 +67,6 @@ function App() {
             </PublicRoute>
           }
         />
-        <Route path="/register-user" element={<Register rolePreset="user" />} />
-        <Route
-          path="/register-admin"
-          element={<Register rolePreset="admin" />}
-        />
-
         <Route
           path="/forgot"
           element={
@@ -69,10 +86,12 @@ function App() {
 
         {/* Protected Routes */}
         <Route
-          path="/home"
+          path="/dashboard"
           element={
             <ProtectedRoute>
-              <Home />
+              <AppLayout>
+                <Home />
+              </AppLayout>
             </ProtectedRoute>
           }
         />
@@ -80,12 +99,38 @@ function App() {
           path="/change-password"
           element={
             <ProtectedRoute>
-              <ChangePassword />
+              <AppLayout>
+                <ChangePassword />
+              </AppLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* Catch all route */}
+        {/* Admin Dashboard Route */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <AdminDashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+         {/* user Dashboard Route */}
+        <Route
+          path="/user"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <UserDashboard />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Redirect base or invalid route */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

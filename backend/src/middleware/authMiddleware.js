@@ -1,4 +1,4 @@
-
+// src/middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
 
 /**
@@ -23,7 +23,7 @@ exports.verifyToken = (req, res, next) => {
         };
         next();
     } catch (err) {
-        console.error('❌ Invalid token:', err.message);
+        console.error('Invalid token:', err.message);
         return res.status(401).json({ msg: 'Access denied: Invalid token' });
     }
 };
@@ -33,7 +33,7 @@ exports.verifyToken = (req, res, next) => {
  */
 exports.isAdmin = (req, res, next) => {
     if (!req.user || req.user.role !== 'admin') {
-        console.warn('⛔ Admin access denied');
+        console.warn('Admin access denied');
         return res.status(403).json({ msg: 'Admin access only' });
     }
     next();
