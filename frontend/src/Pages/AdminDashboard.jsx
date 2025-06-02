@@ -70,7 +70,6 @@ const AdminDashboard = () => {
     try {
       let response;
       if (isEditing) {
-        // Fix PUT request URL to /events/:id
         response = await axiosInstance.put(`/events/${editingId}`, form);
         setEvents(events.map((event) => (event._id === editingId ? response.data.event : event)));
         toast.success("Event updated successfully!");
