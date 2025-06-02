@@ -31,7 +31,7 @@ app.use('/api/user', userRoutes);
 const eventRoutes = require('./src/routes/eventRoutes');
 app.use('/api/events', eventRoutes);
 
-const adminRoutes = require('./routes/adminRoutes');
+const adminRoutes = require('./src/routes/adminRoutes.js');
 app.use('/api/admin', adminRoutes);
 
 // Default Route

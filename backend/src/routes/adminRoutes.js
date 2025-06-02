@@ -1,35 +1,51 @@
+// src/routes/adminRoutes.js
+
 const express = require('express');
 const router = express.Router();
 const User = require('../models/UserModel');
-const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 const transporter = require('../config/mailConnect');
+const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 
-router.post('/ban-user/:id', verifyToken, isAdmin, async (req, res) => {
+// Ban user route
+router.post('/ban/:id', verifyToken, isAdmin, async (req, res) => {
   try {
-    const { reason } = req.body;
-    const user = await User.findById(req.params.id);
+    const targetUserId = req.params.id;
 
-    if (!user) return res.status(404).json({ msg: 'User not found' });
+    // Prevent admin from banning themselves
+    if (targetUserId === req.user.id) {
+      return res.status(403).json({ msg: "You cannot ban yourself" });
+    }
 
-    user.isBanned = true;
-    user.bannedReason = reason || 'Violation of terms';
-    await user.save();
+    const userToBan = await User.findById(targetUserId);
+    if (!userToBan) {
+      return res.status(404).json({ msg: "User not found" });
+    }
 
+    // Prevent banning other admins
+    if (userToBan.role === 'admin') {
+      return res.status(403).json({ msg: "You cannot ban another admin" });
+    }
+
+    userToBan.isBanned = true;
+    await userToBan.save();
+
+    // Send ban email
     await transporter.sendMail({
       from: process.env.TEST_EMAIL,
-      to: user.email,
-      subject: 'Account Banned Notification',
+      to: userToBan.email,
+      subject: 'You have been banned',
       html: `
-        <h3>Your account has been banned</h3>
-        <p>Reason: <strong>${user.bannedReason}</strong></p>
+        <h3>Account Banned</h3>
+        <p>Dear ${userToBan.name},</p>
+        <p>Your account has been banned by the administrator for violating policies.</p>
         <p>If you believe this is a mistake, please contact support.</p>
       `,
     });
 
-    res.status(200).json({ msg: 'User has been banned and notified by email.' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error', error: err.message });
+    res.status(200).json({ msg: "User has been banned and notified via email" });
+  } catch (error) {
+    console.error('Ban Error:', error);
+    res.status(500).json({ msg: "Server error while banning user", error: error.message });
   }
 });
 
