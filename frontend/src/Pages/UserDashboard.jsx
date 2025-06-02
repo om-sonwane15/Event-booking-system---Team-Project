@@ -132,7 +132,7 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-r from-[#005D78] via-[#004D68] to-[#003D58] text-white py-12">
+      <div className="bg-gradient-to-r from-[#005c78] via-[#004D68] to-[#003D58] text-white py-12">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold mb-4">Discover Amazing Events</h2>
           <p className="text-xl opacity-90">Book tickets for movies, events, plays, sports & activities</p>

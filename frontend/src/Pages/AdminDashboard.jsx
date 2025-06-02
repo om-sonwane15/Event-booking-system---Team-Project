@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { FiEdit, FiTrash2, FiPlus, FiCalendar, FiMapPin, FiDollarSign, FiSave, FiX, FiFilter } from "react-icons/fi";
+import { FiEdit, FiTrash2, FiPlus, FiCalendar, FiMapPin, FiSave, FiX, FiFilter } from "react-icons/fi";
+import { FaRupeeSign } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
 
 const AdminDashboard = () => {
@@ -225,8 +226,8 @@ const AdminDashboard = () => {
             <span className="truncate">{item.location}</span>
           </div>
           <div className="flex items-center text-sm font-semibold text-emerald-600">
-            <FiDollarSign className="w-4 h-4 mr-1" />
-            <span>₹{Number(item.price).toLocaleString()}</span>
+            <FaRupeeSign className="w-4 h-4 mr-1" />
+            <span>{Number(item.price).toLocaleString()}</span>
           </div>
         </div>
         
@@ -279,7 +280,7 @@ const AdminDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-cyan-700 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#005c78] via-[#004D68] to-[#003D58] bg-clip-text text-transparent">
                 Admin Dashboard
               </h1>
               <p className="text-gray-600 mt-1">Manage your events and movies</p>
@@ -409,7 +410,7 @@ const AdminDashboard = () => {
                   </button>
                   <button
                     onClick={resetForm}
-                    className="px-6 cursor-pointer  py-3 bg-red-500 hover:bg-red-600 text-gray-700 font-semibold rounded-xl transition-all duration-200"
+                    className="px-6 cursor-pointer  py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all duration-200"
                   >
                     Cancel
                   </button>
@@ -506,7 +507,7 @@ const AdminDashboard = () => {
           {renderList(getActiveList())}
         </div>
       </div>
-       <ToastContainer position="top-center" autoClose={3000} limit={3} />
+       <ToastContainer position="top-center" autoClose={3500}  hideProgressBar={false} newestOnTop closeOnClick draggable pauseOnHover limit={3} />
     </div>
   );
 };

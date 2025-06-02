@@ -52,7 +52,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-gradient-to-r from-purple-700 via-purple-800 to-purple-900 border-b border-purple-600 shadow-md">
+    <nav className="bg-gradient-to-r from-[#005D78] via-[#004D68] to-[#003D58] shadow-md">
       <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
         {/* Left side heading */}
         <div
