@@ -15,7 +15,9 @@ import Home from "./Pages/Home";
 import ChangePassword from "./Pages/ChangePassword";
 import AdminDashboard from "./Pages/AdminDashboard";
 import UserDashboard from "./Pages/UserDashboard";
-import Services from "./pages/Services.jsx";
+
+import Services from "./Pages/Services.jsx";
+import Profile from "./Pages/Profile";
 import About from "./Pages/About";
 import ContactUs from "./pages/ContactUs.jsx";
 import MainLayout from "./Components/MainLayout";
@@ -161,6 +163,16 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <UserDashboard />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Profile />
               </MainLayout>
             </ProtectedRoute>
           }
