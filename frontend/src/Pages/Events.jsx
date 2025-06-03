@@ -12,13 +12,9 @@ const Events = ({ events, likedEvents, handleLike }) => {
           >
             <div className="relative w-full aspect-[4/3] overflow-hidden">
               <img
-                src={event.image || 'https://images.unsplash.com/photo-1489599243109-f81640a4b40b?w=400&h=300&fit=crop'}
+                src={event.image}
                 alt={event.title}
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = 'https://images.unsplash.com/photo-1489599243109-f81640a4b40b?w=400&h=300&fit=crop';
-                }}
                 loading="lazy"
               />
               <button

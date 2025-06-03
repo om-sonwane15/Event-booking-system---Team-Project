@@ -10,6 +10,9 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir);
 }
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static(uploadsDir));
+
 // DB Connection
 const dbConnect = require('./src/config/dbConnect.js');
 dbConnect();

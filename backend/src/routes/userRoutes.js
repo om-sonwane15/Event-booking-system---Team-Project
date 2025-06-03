@@ -22,7 +22,7 @@ router.get('/view-profile', verifyToken, async (req, res) => {
     }
 });
 
-// Update profile
+// Update your backend route to ensure proper image serving
 router.put('/update-profile', verifyToken, upload('profilePic'), async (req, res) => {
   try {
     const { name, phone, bio } = req.body;
@@ -39,11 +39,17 @@ router.put('/update-profile', verifyToken, upload('profilePic'), async (req, res
     }
 
     if (req.file) {
-      const imagePath = path.join('/uploads', req.user.email, req.file.filename).replace(/\\/g, '/');
+      // Ensure consistent path format
+      const imagePath = `/uploads/${req.user.email}/${req.file.filename}`;
       updateData.profilePic = imagePath;
     }
 
-    const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, { new: true }).select('name profilePic phone bio email role');
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id, 
+      updateData, 
+      { new: true }
+    ).select('name profilePic phone bio email role');
+
     res.json({
       msg: 'Profile updated successfully',
       user: updatedUser

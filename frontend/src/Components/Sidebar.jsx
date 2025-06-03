@@ -68,7 +68,8 @@ const Sidebar = () => {
               filter: 'brightness(0.7)'
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#004A65]/90 via-[#004A65]/80 to-[#0077a3]/90" />
+          //backdrop gradient off--
+          {/* <div className="absolute inset-0 bg-gradient-to-b from-[#004A65]/90 via-[#004A65]/80 to-[#0077a3]/90" /> */}
         </div>
         
         {/* Content Layer */}

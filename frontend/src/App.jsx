@@ -19,6 +19,7 @@ import Services from "./pages/Services.jsx";
 import About from "./Pages/About";
 import ContactUs from "./pages/ContactUs.jsx";
 import MainLayout from "./Components/MainLayout";
+import Profile from "./pages/Profile.jsx";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -161,6 +162,17 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <UserDashboard />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Profile />
               </MainLayout>
             </ProtectedRoute>
           }
