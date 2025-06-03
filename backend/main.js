@@ -4,8 +4,7 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
+const uploadsDir = path.join(__dirname, 'src', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir);
 }
@@ -30,6 +29,12 @@ app.use('/api/user', userRoutes);
 
 const eventRoutes = require('./src/routes/eventRoutes');
 app.use('/api/events', eventRoutes);
+
+const eventAdminRoutes = require('./src/routes/eventAdminRoutes');
+app.use('/api/admin-events', eventAdminRoutes);
+
+const adminRoutes = require('./src/routes/adminRoutes.js');
+app.use('/api/admin', adminRoutes);
 
 // Default Route
 app.get('/', (req, res) => {

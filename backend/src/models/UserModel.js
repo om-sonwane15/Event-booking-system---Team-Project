@@ -1,3 +1,4 @@
+// src/models/UserModel.js
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema(
@@ -51,9 +52,17 @@ const UserSchema = new mongoose.Schema(
         password: {
             type: String,
             required: [true, 'Password is required'],
-        }
+        },
+         isBanned: {
+      type: Boolean,
+      default: false,
     },
-    { timestamps: true }
+    bannedReason: {
+      type: String,
+      default: '',
+    },
+  },
+  { timestamps: true }
 );
 
 module.exports = mongoose.model('User', UserSchema);
