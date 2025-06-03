@@ -3,135 +3,309 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 const Event = require('../models/EventModel');
+const mongoose = require('mongoose');
 
 
-// View all events (including unpublished)
-router.get('/admin/events', verifyToken, isAdmin, async (req, res) => {
+// Helper function for validating ObjectIds
+const isValidObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id);
+};
+
+// View all events (including unpublished) with filtering, pagination, and search
+router.get('/list-events', verifyToken, isAdmin, async (req, res) => {
   try {
-    const events = await Event.find()
-      .populate('createdBy', 'name email')
-      .populate('attendees', 'name email')
-      .sort({ createdAt: -1 });
-    res.json(events);
+    const { status, category, search, page = 1, limit = 10 } = req.query;
+    const query = {};
+
+    if (status) {
+      switch (status) {
+        case 'pending':
+          query.isPublished = false;
+          query.cancelled = false;
+          break;
+        case 'published':
+          query.isPublished = true;
+          query.cancelled = false;
+          break;
+        case 'cancelled':
+          query.cancelled = true;
+          break;
+        case 'upcoming':
+          query.startTime = { $gt: new Date() };
+          break;
+        case 'past':
+          query.endTime = { $lt: new Date() };
+          break;
+      }
+    }
+
+    if (category) query.category = category;
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { startTime: -1 },
+      populate: ['createdBy', 'attendees'],
+      select: 'name email'
+    };
+
+    const events = await Event.paginate(query, options);
+
+    res.json({
+      success: true,
+      data: events.docs,
+      total: events.totalDocs,
+      pages: events.totalPages,
+      currentPage: events.page
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Admin event list error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch events',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
-// View only events needing approval
-router.get('/admin/events/pending', verifyToken, isAdmin, async (req, res) => {
+// View only events needing approval with pagination
+router.get('/unpublished-events', verifyToken, isAdmin, async (req, res) => {
   try {
-    const events = await Event.find({ isPublished: false })
-      .populate('createdBy', 'name email')
-      .sort({ createdAt: -1 });
-    res.json(events);
+    const { page = 1, limit = 10 } = req.query;
+    
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { createdAt: -1 },
+      populate: 'createdBy',
+      select: 'name email'
+    };
+
+    const events = await Event.paginate({ 
+      isPublished: false,
+      cancelled: false,
+      startTime: { $gt: new Date() }
+    }, options);
+
+    res.json({
+      success: true,
+      data: events.docs,
+      total: events.totalDocs,
+      pages: events.totalPages,
+      currentPage: events.page
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Unpublished events error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch pending events',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
 // View all attendees for a specific event
-router.get('/admin/events/:id/attendees', verifyToken, isAdmin, async (req, res) => {
+router.get('/event-attendees/:id', verifyToken, isAdmin, async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid event ID format' 
+      });
+    }
+
     const event = await Event.findById(req.params.id)
       .populate('attendees', 'name email phone')
       .populate('bookings.user', 'name email');
     
     if (!event) {
-      return res.status(404).json({ msg: 'Event not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Event not found' 
+      });
     }
 
     res.json({
+      success: true,
       eventTitle: event.title,
       totalAttendees: event.attendees.length,
       attendees: event.attendees,
       bookings: event.bookings
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Event attendees error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch attendees',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
 // View detailed event information
-router.get('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
+router.get('/event-detail/:id', verifyToken, isAdmin, async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid event ID format' 
+      });
+    }
+
     const event = await Event.findById(req.params.id)
       .populate('createdBy', 'name email')
       .populate('attendees', 'name email')
-      .populate('bookings.user', 'name email')
-      .populate('ratings.user', 'name');
+      .populate('bookings.user', 'name email');
     
     if (!event) {
-      return res.status(404).json({ msg: 'Event not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Event not found' 
+      });
     }
 
-    res.json(event);
+    res.json({
+      success: true,
+      data: event
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Event detail error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to fetch event details',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
 // Admin create event (can choose to publish immediately)
-router.post('/admin/events', verifyToken, isAdmin, async (req, res) => {
+router.post('/create-event', verifyToken, isAdmin, async (req, res) => {
   try {
-    const { title, date, time, type, category, location, maxAttendees, description, isPublished } = req.body;
+    const { title, startTime, endTime, type, category, location, maxAttendees, description, isPublished, ticketTypes } = req.body;
     
-    // Validate event date/time is in the future
-    const eventDateTime = new Date(`${date}T${convertTo24Hour(time)}`);
-    if (eventDateTime <= new Date()) {
-      return res.status(400).json({ msg: 'Event date and time must be in the future' });
+    // Validate required fields
+    const requiredFields = ['title', 'startTime', 'endTime', 'type', 'category', 'location', 'maxAttendees', 'description'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        success: false,
+        message: `Missing required fields: ${missingFields.join(', ')}` 
+      });
+    }
+
+    // Validate ticket types if provided
+    if (ticketTypes && Array.isArray(ticketTypes)) {
+      for (const ticketType of ticketTypes) {
+        if (!ticketType.name || ticketType.price === undefined || ticketType.available === undefined) {
+          return res.status(400).json({ 
+            success: false,
+            message: 'Ticket type must have name, price, and available quantity' 
+          });
+        }
+      }
+    }
+
+    // Validate times
+    const eventStart = new Date(startTime);
+    const eventEnd = new Date(endTime);
+    const now = new Date();
+
+    if (eventStart <= now) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Event must be in the future' 
+      });
+    }
+
+    if (eventEnd <= eventStart) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'End time must be after start time' 
+      });
     }
 
     const newEvent = new Event({
       title,
-      date,
-      time,
+      startTime,
+      endTime,
       type,
       category,
       location,
       maxAttendees,
       description,
-      createdBy: req.user.id, // Admin is the creator
-      isPublished: isPublished || false
+      createdBy: req.user.id,
+      isPublished: isPublished || false,
+      ticketTypes: ticketTypes || []
     });
 
     await newEvent.save();
-    res.status(201).json(newEvent);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Event created successfully',
+      data: newEvent
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Event creation error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to create event',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
 // Admin update any event
-router.put('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
+router.put('/update-event/:id', verifyToken, isAdmin, async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid event ID format' 
+      });
+    }
+
     const event = await Event.findById(req.params.id);
     
     if (!event) {
-      return res.status(404).json({ msg: 'Event not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Event not found' 
+      });
     }
 
-    // Validate new date/time is in the future if being updated
-    if (req.body.date || req.body.time) {
-      const newDate = req.body.date || event.date;
-      const newTime = req.body.time || event.time;
-      const eventDateTime = new Date(`${newDate}T${convertTo24Hour(newTime)}`);
-      
-      if (eventDateTime <= new Date()) {
-        return res.status(400).json({ msg: 'Event date and time must be in the future' });
+    // Validate new times if being updated
+    if (req.body.startTime || req.body.endTime) {
+      const newStart = req.body.startTime ? new Date(req.body.startTime) : event.startTime;
+      const newEnd = req.body.endTime ? new Date(req.body.endTime) : event.endTime;
+      const now = new Date();
+
+      if (newStart <= now) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Event must be in the future' 
+        });
+      }
+      if (newEnd <= newStart) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'End time must be after start time' 
+        });
       }
     }
 
     // Update all allowed fields
     const updatableFields = [
-      'title', 'date', 'time', 'type', 'category', 'location', 
-      'maxAttendees', 'description', 'image', 'gallery', 'tags',
-      'isFeatured', 'cancellationPolicy', 'ageRestriction', 'language', 'duration'
+      'title', 'startTime', 'endTime', 'type', 'category', 'location', 
+      'maxAttendees', 'description', 'image', 'isFeatured',
+      'cancellationPolicy', 'ticketTypes'
     ];
 
     updatableFields.forEach(field => {
@@ -141,85 +315,188 @@ router.put('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
     });
 
     await event.save();
-    res.json(event);
+    
+    res.json({
+      success: true,
+      message: 'Event updated successfully',
+      data: event
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Event update error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to update event',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
 // Admin delete or cancel event with reason
-router.delete('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
+router.delete('/remove-event/:id', verifyToken, isAdmin, async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid event ID format' 
+      });
+    }
+
     const { reason } = req.body;
     const event = await Event.findById(req.params.id);
     
     if (!event) {
-      return res.status(404).json({ msg: 'Event not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Event not found' 
+      });
     }
 
     if (!reason) {
-      return res.status(400).json({ msg: 'Please provide a reason for cancellation/deletion' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'Cancellation reason is required' 
+      });
     }
 
-    // Instead of deleting, we'll mark as cancelled and store the reason
-    event.cancelled = true;
-    event.cancellationPolicy = reason;
-    
-    // Notify the creator (in a real app, you'd send an email or notification)
-    console.log(`Event ${event._id} cancelled by admin. Reason: ${reason}`);
-    
-    await event.save();
-    res.json({ msg: 'Event cancelled successfully', reason });
+    // If there are attendees, cancel instead of delete
+    if (event.attendees.length > 0) {
+      try {
+        event.cancelled = true;
+        event.cancellationPolicy = reason;
+        await event.save();
+        
+        return res.json({ 
+          success: true,
+          message: 'Event cancelled successfully',
+          data: { reason } 
+        });
+      } catch (saveErr) {
+        console.error('Event cancellation error:', saveErr);
+        return res.status(500).json({ 
+          success: false,
+          message: 'Failed to cancel event',
+          error: process.env.NODE_ENV === 'development' ? saveErr.message : undefined
+        });
+      }
+    }
+
+    // No attendees - can delete
+    try {
+      await event.deleteOne();
+      return res.json({ 
+        success: true,
+        message: 'Event deleted successfully',
+        data: { reason } 
+      });
+    } catch (deleteErr) {
+      console.error('Event deletion error:', deleteErr);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Failed to delete event',
+        error: process.env.NODE_ENV === 'development' ? deleteErr.message : undefined
+      });
+    }
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Event removal error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to process event removal',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
 // Approve/publish an event
-router.post('/admin/events/:id/approve', verifyToken, isAdmin, async (req, res) => {
+router.post('/publish-event/:id', verifyToken, isAdmin, async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid event ID format' 
+      });
+    }
+
     const event = await Event.findById(req.params.id);
     
     if (!event) {
-      return res.status(404).json({ msg: 'Event not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Event not found' 
+      });
     }
 
-    // Check if event date is in the future
-    const eventDateTime = new Date(`${event.date}T${convertTo24Hour(event.time)}`);
-    if (eventDateTime <= new Date()) {
-      return res.status(400).json({ msg: 'Cannot publish an event with past date/time' });
+    if (event.startTime <= new Date()) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Cannot publish an event with past start time' 
+      });
     }
 
-    // Toggle publish status
+    if (event.cancelled) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Cannot publish a cancelled event' 
+      });
+    }
+
     event.isPublished = !event.isPublished;
     await event.save();
 
     res.json({ 
-      msg: event.isPublished ? 'Event published successfully' : 'Event unpublished successfully',
-      isPublished: event.isPublished
+      success: true,
+      message: event.isPublished ? 'Event published successfully' : 'Event unpublished successfully',
+      data: { isPublished: event.isPublished }
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Event publish error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to update event publish status',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
-// Helper function to convert 12-hour time to 24-hour format
-function convertTo24Hour(timeString) {
-  const [time, modifier] = timeString.split(' ');
-  let [hours, minutes] = time.split(':');
-  
-  if (hours === '12') {
-    hours = '00';
-  }
-  
-  if (modifier === 'PM') {
-    hours = parseInt(hours, 10) + 12;
-  }
-  
-  return `${hours}:${minutes}`;
-}
+// // Get event statistics
+// router.get('/stats', verifyToken, isAdmin, async (req, res) => {
+//   try {
+//     const [
+//       totalEvents,
+//       publishedEvents,
+//       cancelledEvents,
+//       upcomingEvents,
+//       popularCategories
+//     ] = await Promise.all([
+//       Event.countDocuments(),
+//       Event.countDocuments({ isPublished: true }),
+//       Event.countDocuments({ cancelled: true }),
+//       Event.countDocuments({ startTime: { $gt: new Date() } }),
+//       Event.aggregate([
+//         { $match: { isPublished: true } },
+//         { $group: { _id: '$category', count: { $sum: 1 } } },
+//         { $sort: { count: -1 } },
+//         { $limit: 5 }
+//       ])
+//     ]);
+
+//     res.json({
+//       success: true,
+//       data: {
+//         totalEvents,
+//         publishedEvents,
+//         cancelledEvents,
+//         upcomingEvents,
+//         popularCategories
+//       }
+//     });
+//   } catch (err) {
+//     console.error('Event stats error:', err);
+//     res.status(500).json({ 
+//       success: false,
+//       message: 'Failed to fetch event statistics',
+//       error: process.env.NODE_ENV === 'development' ? err.message : undefined
+//     });
+//   }
+// });
 
 module.exports = router;
