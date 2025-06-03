@@ -22,6 +22,10 @@ app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 
 // Routes
+const analysisRoutes = require('./src/routes/analysisRoutes');
+app.use('/api/admin/analysis', analysisRoutes);
+
+
 const authRoutes = require('./src/routes/authRoutes');
 app.use('/api/auth', authRoutes);
 
@@ -36,6 +40,8 @@ app.use('/api/admin-events', eventAdminRoutes);
 
 const adminRoutes = require('./src/routes/adminRoutes.js');
 app.use('/api/admin', adminRoutes);
+
+
 
 // Default Route
 app.get('/', (req, res) => {
