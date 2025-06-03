@@ -58,7 +58,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login (without .select('+password'))
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -66,16 +65,17 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ msg: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
-    // Direct DB query to get password hash, ignoring select:false
-    const userWithPassword = await User.findOne({ email }).select('+password');
-    if (!userWithPassword) return res.status(404).json({ msg: 'User not found' });
+    if (user.isBanned) {
+      return res.status(403).json({
+        msg: `You are banned. Reason: ${user.bannedReason || 'No reason provided'}`,
+      });
+    }
 
-    const isMatch = await bcrypt.compare(password, userWithPassword.password);
-    if (!isMatch)
-      return res.status(401).json({ msg: 'Invalid credentials' });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(401).json({ msg: 'Invalid credentials' });
 
     const token = jwt.sign(
       { id: user._id, role: user.role },
@@ -95,9 +95,7 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Error in login:', err);
-    res
-      .status(500)
-      .json({ msg: 'Server error during login', error: err.message });
+    res.status(500).json({ msg: 'Server error during login', error: err.message });
   }
 });
 
