@@ -5,30 +5,71 @@ const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 const Event = require('../models/EventModel');
 
 
-// View all events (including unpublished)
+// View all events (including unpublished) with filtering
 router.get('/admin/events', verifyToken, isAdmin, async (req, res) => {
   try {
-    const events = await Event.find()
+    const { status, category } = req.query;
+    const query = {};
+
+    if (status) {
+      switch (status) {
+        case 'pending':
+          query.isPublished = false;
+          break;
+        case 'published':
+          query.isPublished = true;
+          query.cancelled = false;
+          break;
+        case 'cancelled':
+          query.cancelled = true;
+          break;
+        case 'upcoming':
+          query.startTime = { $gt: new Date() };
+          break;
+        case 'past':
+          query.endTime = { $lt: new Date() };
+          break;
+      }
+    }
+
+    if (category) query.category = category;
+
+    const events = await Event.find(query)
       .populate('createdBy', 'name email')
       .populate('attendees', 'name email')
-      .sort({ createdAt: -1 });
+      .sort({ startTime: -1 })
+      .lean();
+
     res.json(events);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Error fetching events:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while fetching events',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
 // View only events needing approval
 router.get('/admin/events/pending', verifyToken, isAdmin, async (req, res) => {
   try {
-    const events = await Event.find({ isPublished: false })
-      .populate('createdBy', 'name email')
-      .sort({ createdAt: -1 });
+    const events = await Event.find({ 
+      isPublished: false,
+      cancelled: false,
+      startTime: { $gt: new Date() }
+    })
+    .populate('createdBy', 'name email')
+    .sort({ createdAt: -1 });
+
     res.json(events);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Error fetching pending events:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while fetching pending events',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
@@ -40,18 +81,26 @@ router.get('/admin/events/:id/attendees', verifyToken, isAdmin, async (req, res)
       .populate('bookings.user', 'name email');
     
     if (!event) {
-      return res.status(404).json({ msg: 'Event not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Event not found' 
+      });
     }
 
     res.json({
+      success: true,
       eventTitle: event.title,
       totalAttendees: event.attendees.length,
       attendees: event.attendees,
       bookings: event.bookings
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Error fetching event attendees:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while fetching attendees',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
@@ -61,49 +110,83 @@ router.get('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
     const event = await Event.findById(req.params.id)
       .populate('createdBy', 'name email')
       .populate('attendees', 'name email')
-      .populate('bookings.user', 'name email')
-      .populate('ratings.user', 'name');
+      .populate('bookings.user', 'name email');
     
     if (!event) {
-      return res.status(404).json({ msg: 'Event not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Event not found' 
+      });
     }
 
-    res.json(event);
+    res.json({
+      success: true,
+      data: event
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Error fetching event details:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while fetching event details',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
 // Admin create event (can choose to publish immediately)
 router.post('/admin/events', verifyToken, isAdmin, async (req, res) => {
   try {
-    const { title, date, time, type, category, location, maxAttendees, description, isPublished } = req.body;
+    const { title, startTime, endTime, type, category, location, maxAttendees, description, isPublished } = req.body;
     
-    // Validate event date/time is in the future
-    const eventDateTime = new Date(`${date}T${convertTo24Hour(time)}`);
+    if (!title || !startTime || !endTime || !type || !category || !location || !maxAttendees || !description) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Missing required fields' 
+      });
+    }
+
+    const eventDateTime = new Date(startTime);
     if (eventDateTime <= new Date()) {
-      return res.status(400).json({ msg: 'Event date and time must be in the future' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'Event must be in the future' 
+      });
+    }
+
+    if (new Date(endTime) <= new Date(startTime)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'End time must be after start time' 
+      });
     }
 
     const newEvent = new Event({
       title,
-      date,
-      time,
+      startTime,
+      endTime,
       type,
       category,
       location,
       maxAttendees,
       description,
-      createdBy: req.user.id, // Admin is the creator
+      createdBy: req.user.id,
       isPublished: isPublished || false
     });
 
     await newEvent.save();
-    res.status(201).json(newEvent);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Event created successfully',
+      data: newEvent
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Error creating event:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while creating event',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
@@ -113,25 +196,36 @@ router.put('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
     const event = await Event.findById(req.params.id);
     
     if (!event) {
-      return res.status(404).json({ msg: 'Event not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Event not found' 
+      });
     }
 
-    // Validate new date/time is in the future if being updated
-    if (req.body.date || req.body.time) {
-      const newDate = req.body.date || event.date;
-      const newTime = req.body.time || event.time;
-      const eventDateTime = new Date(`${newDate}T${convertTo24Hour(newTime)}`);
-      
-      if (eventDateTime <= new Date()) {
-        return res.status(400).json({ msg: 'Event date and time must be in the future' });
+    // Validate new times if being updated
+    if (req.body.startTime || req.body.endTime) {
+      const newStart = req.body.startTime ? new Date(req.body.startTime) : event.startTime;
+      const newEnd = req.body.endTime ? new Date(req.body.endTime) : event.endTime;
+
+      if (newStart <= new Date()) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Event must be in the future' 
+        });
+      }
+      if (newEnd <= newStart) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'End time must be after start time' 
+        });
       }
     }
 
     // Update all allowed fields
     const updatableFields = [
-      'title', 'date', 'time', 'type', 'category', 'location', 
-      'maxAttendees', 'description', 'image', 'gallery', 'tags',
-      'isFeatured', 'cancellationPolicy', 'ageRestriction', 'language', 'duration'
+      'title', 'startTime', 'endTime', 'type', 'category', 'location', 
+      'maxAttendees', 'description', 'image', 'isFeatured',
+      'cancellationPolicy'
     ];
 
     updatableFields.forEach(field => {
@@ -141,10 +235,19 @@ router.put('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
     });
 
     await event.save();
-    res.json(event);
+    
+    res.json({
+      success: true,
+      message: 'Event updated successfully',
+      data: event
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Error updating event:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while updating event',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
@@ -155,25 +258,47 @@ router.delete('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
     const event = await Event.findById(req.params.id);
     
     if (!event) {
-      return res.status(404).json({ msg: 'Event not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Event not found' 
+      });
     }
 
     if (!reason) {
-      return res.status(400).json({ msg: 'Please provide a reason for cancellation/deletion' });
+      return res.status(400).json({ 
+        success: false,
+        message: 'Please provide a reason for cancellation/deletion' 
+      });
     }
 
-    // Instead of deleting, we'll mark as cancelled and store the reason
-    event.cancelled = true;
-    event.cancellationPolicy = reason;
+    // If there are attendees, cancel instead of delete
+    if (event.attendees.length > 0) {
+      event.cancelled = true;
+      event.cancellationPolicy = reason;
+      await event.save();
+      
+      return res.json({ 
+        success: true,
+        message: 'Event cancelled successfully',
+        reason 
+      });
+    }
+
+    // No attendees - can delete
+    await event.remove();
     
-    // Notify the creator (in a real app, you'd send an email or notification)
-    console.log(`Event ${event._id} cancelled by admin. Reason: ${reason}`);
-    
-    await event.save();
-    res.json({ msg: 'Event cancelled successfully', reason });
+    res.json({ 
+      success: true,
+      message: 'Event deleted successfully',
+      reason 
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Error cancelling event:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while cancelling event',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
@@ -183,43 +308,70 @@ router.post('/admin/events/:id/approve', verifyToken, isAdmin, async (req, res) 
     const event = await Event.findById(req.params.id);
     
     if (!event) {
-      return res.status(404).json({ msg: 'Event not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Event not found' 
+      });
     }
 
-    // Check if event date is in the future
-    const eventDateTime = new Date(`${event.date}T${convertTo24Hour(event.time)}`);
-    if (eventDateTime <= new Date()) {
-      return res.status(400).json({ msg: 'Cannot publish an event with past date/time' });
+    if (event.startTime <= new Date()) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Cannot publish an event with past start time' 
+      });
     }
 
-    // Toggle publish status
     event.isPublished = !event.isPublished;
     await event.save();
 
     res.json({ 
-      msg: event.isPublished ? 'Event published successfully' : 'Event unpublished successfully',
+      success: true,
+      message: event.isPublished ? 'Event published successfully' : 'Event unpublished successfully',
       isPublished: event.isPublished
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error' });
+    console.error('Error approving event:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while approving event',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
-// Helper function to convert 12-hour time to 24-hour format
-function convertTo24Hour(timeString) {
-  const [time, modifier] = timeString.split(' ');
-  let [hours, minutes] = time.split(':');
-  
-  if (hours === '12') {
-    hours = '00';
+// Get event statistics
+router.get('/admin/events/stats', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const totalEvents = await Event.countDocuments();
+    const publishedEvents = await Event.countDocuments({ isPublished: true });
+    const cancelledEvents = await Event.countDocuments({ cancelled: true });
+    const upcomingEvents = await Event.countDocuments({ startTime: { $gt: new Date() } });
+    
+    const popularCategories = await Event.aggregate([
+      { $match: { isPublished: true } },
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalEvents,
+        publishedEvents,
+        cancelledEvents,
+        upcomingEvents,
+        popularCategories
+      }
+    });
+  } catch (err) {
+    console.error('Error fetching event stats:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while fetching statistics',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
-  
-  if (modifier === 'PM') {
-    hours = parseInt(hours, 10) + 12;
-  }
-  
-  return `${hours}:${minutes}`;
-}
+});
 
 module.exports = router;
