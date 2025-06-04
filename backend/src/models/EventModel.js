@@ -1,5 +1,6 @@
 // src/models/EventModel.js
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate-v2');
 
 const EventSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true, maxlength: 100 },
@@ -56,5 +57,7 @@ EventSchema.virtual('status').get(function () {
     return 'Status Unknown';
   }
 });
+
+EventSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model('Event', EventSchema);

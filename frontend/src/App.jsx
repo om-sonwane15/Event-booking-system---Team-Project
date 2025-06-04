@@ -13,10 +13,12 @@ import ForgotPassword from "./Pages/ForgotPassword";
 import ResetPassword from "./Pages/ResetPassword";
 import Home from "./Pages/Home";
 import ChangePassword from "./Pages/ChangePassword";
-
-import AdminDashboard from "./Pages/AdminDashboard"; 
+import AdminDashboard from "./Pages/AdminDashboard";
 import UserDashboard from "./Pages/UserDashboard";
-import Navbar from "./Components/Navbar";
+import Services from "./Pages/Services.jsx";
+import About from "./Pages/About";
+import ContactUs from "./pages/ContactUs.jsx";
+import MainLayout from "./Components/MainLayout";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token") || sessionStorage.getItem("token");
@@ -28,20 +30,10 @@ const PublicRoute = ({ children }) => {
   return !token ? children : <Navigate to="/dashboard" replace />;
 };
 
-const AppLayout = ({ children }) => {
-  const location = useLocation();
-  const hideNavbarRoutes = ["/login", "/register", "/forgot", "/reset-password"];
-
-  const shouldHideNavbar = hideNavbarRoutes.some(route =>
-    location.pathname.startsWith(route)
-  );
-
+const PublicLayout = ({ children }) => {
   return (
-    <div className="flex flex-col h-screen">
-      {!shouldHideNavbar && <Navbar />}
-      <main className="flex-1 p-6 overflow-auto bg-gray-100">
-        {children}
-      </main>
+    <div className="min-h-screen bg-gray-100">
+      {children}
     </div>
   );
 };
@@ -55,7 +47,9 @@ function App() {
           path="/login"
           element={
             <PublicRoute>
-              <Login />
+              <PublicLayout>
+                <Login />
+              </PublicLayout>
             </PublicRoute>
           }
         />
@@ -63,7 +57,9 @@ function App() {
           path="/register"
           element={
             <PublicRoute>
-              <Register />
+              <PublicLayout>
+                <Register />
+              </PublicLayout>
             </PublicRoute>
           }
         />
@@ -71,7 +67,9 @@ function App() {
           path="/forgot"
           element={
             <PublicRoute>
-              <ForgotPassword />
+              <PublicLayout>
+                <ForgotPassword />
+              </PublicLayout>
             </PublicRoute>
           }
         />
@@ -79,19 +77,61 @@ function App() {
           path="/reset-password/:token"
           element={
             <PublicRoute>
-              <ResetPassword />
+              <PublicLayout>
+                <ResetPassword />
+              </PublicLayout>
             </PublicRoute>
           }
         />
 
-        {/* Protected Routes */}
+        {/* Protected Routes with Sidebar */}
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <AppLayout>
+              <MainLayout>
                 <Home />
-              </AppLayout>
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/services"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Services />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <UserDashboard />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/about"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <About />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/status"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ContactUs />
+              </MainLayout>
             </ProtectedRoute>
           }
         />
@@ -99,37 +139,34 @@ function App() {
           path="/change-password"
           element={
             <ProtectedRoute>
-              <AppLayout>
+              <MainLayout>
                 <ChangePassword />
-              </AppLayout>
+              </MainLayout>
             </ProtectedRoute>
           }
         />
-
-        {/* Admin Dashboard Route */}
         <Route
           path="/admin"
           element={
             <ProtectedRoute>
-              <AppLayout>
+              <MainLayout>
                 <AdminDashboard />
-              </AppLayout>
+              </MainLayout>
             </ProtectedRoute>
           }
         />
-         {/* user Dashboard Route */}
         <Route
           path="/user"
           element={
             <ProtectedRoute>
-              <AppLayout>
+              <MainLayout>
                 <UserDashboard />
-              </AppLayout>
+              </MainLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* Redirect base or invalid route */}
+        {/* Redirect routes */}
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

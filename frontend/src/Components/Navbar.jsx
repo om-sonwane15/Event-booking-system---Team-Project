@@ -67,7 +67,7 @@ const Navbar = () => {
         <div className="hidden md:flex items-center space-x-4">
           <button
             onClick={() => handleNavigation(isAdmin ? "/admin" : "/user")}
-            className="flex cursor-pointer items-center space-x-2 px-4 py-2 rounded-lg text-white hover:text-blue-300 font-semibold transition duration-200 hover:bg-purple-700"
+            className="flex cursor-pointer items-center space-x-2 px-4 py-2 rounded-lg text-white hover:text-blue-300 font-semibold transition duration-200 hover:bg-cyan-700"
           >
             {isAdmin ? <FiShield className="text-lg" /> : <FiHome className="text-lg" />}
             <span>{isAdmin ? "Admin Panel" : "Dashboard"}</span>
@@ -75,7 +75,7 @@ const Navbar = () => {
 
           <button
             onClick={() => handleNavigation("/profile", "Navigating to profile...")}
-            className="flex cursor-pointer items-center space-x-2 px-4 py-2 rounded-lg text-white hover:text-blue-300 font-semibold transition duration-200 hover:bg-purple-700"
+            className="flex cursor-pointer items-center space-x-2 px-4 py-2 rounded-lg text-white hover:text-blue-300 font-semibold transition duration-200 hover:bg-cyan-700"
           >
             <FiUser className="text-lg" />
             <span>Profile</span>
@@ -84,7 +84,7 @@ const Navbar = () => {
           <div className="relative" ref={profileRef}>
             <button
               onClick={toggleProfileMenu}
-              className="flex cursor-pointer items-center space-x-1 px-4 py-2 rounded-lg text-white hover:text-blue-300 transition duration-200 focus:outline-none hover:bg-purple-700"
+              className="flex cursor-pointer items-center space-x-1 px-4 py-2 rounded-lg text-white hover:text-blue-300 transition duration-200 focus:outline-none hover:bg-cyan-700"
               aria-label="User profile menu"
             >
               <FaUserCircle className="text-3xl" />
@@ -121,7 +121,7 @@ const Navbar = () => {
         <div className="md:hidden">
           <button
             onClick={toggleMobileMenu}
-            className="text-white cursor-pointer p-2 rounded-lg focus:outline-none hover:bg-purple-700"
+            className="text-white cursor-pointer p-2 rounded-lg focus:outline-none hover:bg-cyan-700"
             aria-label="Toggle mobile menu"
           >
             {isMobileMenuOpen ? <FiX className="text-3xl" /> : <FiMenu className="text-3xl" />}
@@ -131,11 +131,11 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-purple-800 border-t border-purple-700 shadow-inner">
+        <div className="md:hiddenbg-gradient-to-r from-[#005D78] via-[#004D68] to-[#003D58] shadow-inner">
           <div className="flex flex-col space-y-1 px-4 py-4">
             <button
               onClick={() => handleNavigation(isAdmin ? "/admin" : "/dashboard")}
-              className="flex cursor-pointer items-center space-x-2 px-3 py-2 rounded-md text-white hover:bg-purple-700 font-semibold"
+              className="flex cursor-pointer items-center space-x-2 px-3 py-2 rounded-md text-white hover:bg-[#005D78] font-semibold"
             >
               {isAdmin ? <FiShield className="text-lg" /> : <FiHome className="text-lg" />}
               <span>{isAdmin ? "Admin Panel" : "Dashboard"}</span>
@@ -143,7 +143,7 @@ const Navbar = () => {
 
             <button
               onClick={() => handleNavigation("/profile", "Navigating to profile...")}
-              className="flex cursor-pointer items-center space-x-2 px-3 py-2 rounded-md text-white hover:bg-purple-700 font-semibold"
+              className="flex cursor-pointer items-center space-x-2 px-3 py-2 rounded-md text-white hover:bg-[#005D78] font-semibold"
             >
               <FiUser className="text-lg" />
               <span>Profile</span>

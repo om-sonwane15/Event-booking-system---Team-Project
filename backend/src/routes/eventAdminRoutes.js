@@ -3,18 +3,25 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 const Event = require('../models/EventModel');
+const mongoose = require('mongoose');
 
 
-// View all events (including unpublished) with filtering
-router.get('/admin/events', verifyToken, isAdmin, async (req, res) => {
+// Helper function for validating ObjectIds
+const isValidObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id);
+};
+
+// View all events (including unpublished) with filtering, pagination, and search
+router.get('/list-events', verifyToken, isAdmin, async (req, res) => {
   try {
-    const { status, category } = req.query;
+    const { status, category, search, page = 1, limit = 10 } = req.query;
     const query = {};
 
     if (status) {
       switch (status) {
         case 'pending':
           query.isPublished = false;
+          query.cancelled = false;
           break;
         case 'published':
           query.isPublished = true;
@@ -33,49 +40,86 @@ router.get('/admin/events', verifyToken, isAdmin, async (req, res) => {
     }
 
     if (category) query.category = category;
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
 
-    const events = await Event.find(query)
-      .populate('createdBy', 'name email')
-      .populate('attendees', 'name email')
-      .sort({ startTime: -1 })
-      .lean();
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { startTime: -1 },
+      populate: ['createdBy', 'attendees'],
+      select: 'name email'
+    };
 
-    res.json(events);
+    const events = await Event.paginate(query, options);
+
+    res.json({
+      success: true,
+      data: events.docs,
+      total: events.totalDocs,
+      pages: events.totalPages,
+      currentPage: events.page
+    });
   } catch (err) {
-    console.error('Error fetching events:', err);
+    console.error('Admin event list error:', err);
     res.status(500).json({ 
       success: false,
-      message: 'Server error while fetching events',
+      message: 'Failed to fetch events',
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
 
-// View only events needing approval
-router.get('/admin/events/pending', verifyToken, isAdmin, async (req, res) => {
+// View only events needing approval with pagination
+router.get('/unpublished-events', verifyToken, isAdmin, async (req, res) => {
   try {
-    const events = await Event.find({ 
+    const { page = 1, limit = 10 } = req.query;
+    
+    const options = {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sort: { createdAt: -1 },
+      populate: 'createdBy',
+      select: 'name email'
+    };
+
+    const events = await Event.paginate({ 
       isPublished: false,
       cancelled: false,
       startTime: { $gt: new Date() }
-    })
-    .populate('createdBy', 'name email')
-    .sort({ createdAt: -1 });
+    }, options);
 
-    res.json(events);
+    res.json({
+      success: true,
+      data: events.docs,
+      total: events.totalDocs,
+      pages: events.totalPages,
+      currentPage: events.page
+    });
   } catch (err) {
-    console.error('Error fetching pending events:', err);
+    console.error('Unpublished events error:', err);
     res.status(500).json({ 
       success: false,
-      message: 'Server error while fetching pending events',
+      message: 'Failed to fetch pending events',
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
 
 // View all attendees for a specific event
-router.get('/admin/events/:id/attendees', verifyToken, isAdmin, async (req, res) => {
+router.get('/event-attendees/:id', verifyToken, isAdmin, async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid event ID format' 
+      });
+    }
+
     const event = await Event.findById(req.params.id)
       .populate('attendees', 'name email phone')
       .populate('bookings.user', 'name email');
@@ -95,18 +139,25 @@ router.get('/admin/events/:id/attendees', verifyToken, isAdmin, async (req, res)
       bookings: event.bookings
     });
   } catch (err) {
-    console.error('Error fetching event attendees:', err);
+    console.error('Event attendees error:', err);
     res.status(500).json({ 
       success: false,
-      message: 'Server error while fetching attendees',
+      message: 'Failed to fetch attendees',
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
 
 // View detailed event information
-router.get('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
+router.get('/event-detail/:id', verifyToken, isAdmin, async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid event ID format' 
+      });
+    }
+
     const event = await Event.findById(req.params.id)
       .populate('createdBy', 'name email')
       .populate('attendees', 'name email')
@@ -124,36 +175,56 @@ router.get('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
       data: event
     });
   } catch (err) {
-    console.error('Error fetching event details:', err);
+    console.error('Event detail error:', err);
     res.status(500).json({ 
       success: false,
-      message: 'Server error while fetching event details',
+      message: 'Failed to fetch event details',
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
 
 // Admin create event (can choose to publish immediately)
-router.post('/admin/events', verifyToken, isAdmin, async (req, res) => {
+router.post('/create-event', verifyToken, isAdmin, async (req, res) => {
   try {
-    const { title, startTime, endTime, type, category, location, maxAttendees, description, isPublished } = req.body;
+    const { title, startTime, endTime, type, category, location, maxAttendees, description, isPublished, ticketTypes } = req.body;
     
-    if (!title || !startTime || !endTime || !type || !category || !location || !maxAttendees || !description) {
+    // Validate required fields
+    const requiredFields = ['title', 'startTime', 'endTime', 'type', 'category', 'location', 'maxAttendees', 'description'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
       return res.status(400).json({ 
         success: false,
-        message: 'Missing required fields' 
+        message: `Missing required fields: ${missingFields.join(', ')}` 
       });
     }
 
-    const eventDateTime = new Date(startTime);
-    if (eventDateTime <= new Date()) {
+    // Validate ticket types if provided
+    if (ticketTypes && Array.isArray(ticketTypes)) {
+      for (const ticketType of ticketTypes) {
+        if (!ticketType.name || ticketType.price === undefined || ticketType.available === undefined) {
+          return res.status(400).json({ 
+            success: false,
+            message: 'Ticket type must have name, price, and available quantity' 
+          });
+        }
+      }
+    }
+
+    // Validate times
+    const eventStart = new Date(startTime);
+    const eventEnd = new Date(endTime);
+    const now = new Date();
+
+    if (eventStart <= now) {
       return res.status(400).json({ 
         success: false,
         message: 'Event must be in the future' 
       });
     }
 
-    if (new Date(endTime) <= new Date(startTime)) {
+    if (eventEnd <= eventStart) {
       return res.status(400).json({ 
         success: false,
         message: 'End time must be after start time' 
@@ -170,7 +241,8 @@ router.post('/admin/events', verifyToken, isAdmin, async (req, res) => {
       maxAttendees,
       description,
       createdBy: req.user.id,
-      isPublished: isPublished || false
+      isPublished: isPublished || false,
+      ticketTypes: ticketTypes || []
     });
 
     await newEvent.save();
@@ -181,18 +253,25 @@ router.post('/admin/events', verifyToken, isAdmin, async (req, res) => {
       data: newEvent
     });
   } catch (err) {
-    console.error('Error creating event:', err);
+    console.error('Event creation error:', err);
     res.status(500).json({ 
       success: false,
-      message: 'Server error while creating event',
+      message: 'Failed to create event',
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
 
 // Admin update any event
-router.put('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
+router.put('/update-event/:id', verifyToken, isAdmin, async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid event ID format' 
+      });
+    }
+
     const event = await Event.findById(req.params.id);
     
     if (!event) {
@@ -206,8 +285,9 @@ router.put('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
     if (req.body.startTime || req.body.endTime) {
       const newStart = req.body.startTime ? new Date(req.body.startTime) : event.startTime;
       const newEnd = req.body.endTime ? new Date(req.body.endTime) : event.endTime;
+      const now = new Date();
 
-      if (newStart <= new Date()) {
+      if (newStart <= now) {
         return res.status(400).json({ 
           success: false,
           message: 'Event must be in the future' 
@@ -225,7 +305,7 @@ router.put('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
     const updatableFields = [
       'title', 'startTime', 'endTime', 'type', 'category', 'location', 
       'maxAttendees', 'description', 'image', 'isFeatured',
-      'cancellationPolicy'
+      'cancellationPolicy', 'ticketTypes'
     ];
 
     updatableFields.forEach(field => {
@@ -242,18 +322,25 @@ router.put('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
       data: event
     });
   } catch (err) {
-    console.error('Error updating event:', err);
+    console.error('Event update error:', err);
     res.status(500).json({ 
       success: false,
-      message: 'Server error while updating event',
+      message: 'Failed to update event',
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
 
 // Admin delete or cancel event with reason
-router.delete('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
+router.delete('/remove-event/:id', verifyToken, isAdmin, async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid event ID format' 
+      });
+    }
+
     const { reason } = req.body;
     const event = await Event.findById(req.params.id);
     
@@ -267,44 +354,68 @@ router.delete('/admin/events/:id', verifyToken, isAdmin, async (req, res) => {
     if (!reason) {
       return res.status(400).json({ 
         success: false,
-        message: 'Please provide a reason for cancellation/deletion' 
+        message: 'Cancellation reason is required' 
       });
     }
 
     // If there are attendees, cancel instead of delete
     if (event.attendees.length > 0) {
-      event.cancelled = true;
-      event.cancellationPolicy = reason;
-      await event.save();
-      
-      return res.json({ 
-        success: true,
-        message: 'Event cancelled successfully',
-        reason 
-      });
+      try {
+        event.cancelled = true;
+        event.cancellationPolicy = reason;
+        await event.save();
+        
+        return res.json({ 
+          success: true,
+          message: 'Event cancelled successfully',
+          data: { reason } 
+        });
+      } catch (saveErr) {
+        console.error('Event cancellation error:', saveErr);
+        return res.status(500).json({ 
+          success: false,
+          message: 'Failed to cancel event',
+          error: process.env.NODE_ENV === 'development' ? saveErr.message : undefined
+        });
+      }
     }
 
     // No attendees - can delete
-    await event.remove();
-    
-    res.json({ 
-      success: true,
-      message: 'Event deleted successfully',
-      reason 
-    });
+    try {
+      await event.deleteOne();
+      return res.json({ 
+        success: true,
+        message: 'Event deleted successfully',
+        data: { reason } 
+      });
+    } catch (deleteErr) {
+      console.error('Event deletion error:', deleteErr);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Failed to delete event',
+        error: process.env.NODE_ENV === 'development' ? deleteErr.message : undefined
+      });
+    }
   } catch (err) {
-    console.error('Error cancelling event:', err);
+    console.error('Event removal error:', err);
     res.status(500).json({ 
       success: false,
-      message: 'Server error while cancelling event',
+      message: 'Failed to process event removal',
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
 
 // Approve/publish an event
-router.post('/admin/events/:id/approve', verifyToken, isAdmin, async (req, res) => {
+router.post('/publish-event/:id', verifyToken, isAdmin, async (req, res) => {
   try {
+    if (!isValidObjectId(req.params.id)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid event ID format' 
+      });
+    }
+
     const event = await Event.findById(req.params.id);
     
     if (!event) {
@@ -321,57 +432,71 @@ router.post('/admin/events/:id/approve', verifyToken, isAdmin, async (req, res) 
       });
     }
 
+    if (event.cancelled) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Cannot publish a cancelled event' 
+      });
+    }
+
     event.isPublished = !event.isPublished;
     await event.save();
 
     res.json({ 
       success: true,
       message: event.isPublished ? 'Event published successfully' : 'Event unpublished successfully',
-      isPublished: event.isPublished
+      data: { isPublished: event.isPublished }
     });
   } catch (err) {
-    console.error('Error approving event:', err);
+    console.error('Event publish error:', err);
     res.status(500).json({ 
       success: false,
-      message: 'Server error while approving event',
+      message: 'Failed to update event publish status',
       error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
 
-// Get event statistics
-router.get('/admin/events/stats', verifyToken, isAdmin, async (req, res) => {
-  try {
-    const totalEvents = await Event.countDocuments();
-    const publishedEvents = await Event.countDocuments({ isPublished: true });
-    const cancelledEvents = await Event.countDocuments({ cancelled: true });
-    const upcomingEvents = await Event.countDocuments({ startTime: { $gt: new Date() } });
-    
-    const popularCategories = await Event.aggregate([
-      { $match: { isPublished: true } },
-      { $group: { _id: '$category', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 5 }
-    ]);
+// // Get event statistics
+// router.get('/stats', verifyToken, isAdmin, async (req, res) => {
+//   try {
+//     const [
+//       totalEvents,
+//       publishedEvents,
+//       cancelledEvents,
+//       upcomingEvents,
+//       popularCategories
+//     ] = await Promise.all([
+//       Event.countDocuments(),
+//       Event.countDocuments({ isPublished: true }),
+//       Event.countDocuments({ cancelled: true }),
+//       Event.countDocuments({ startTime: { $gt: new Date() } }),
+//       Event.aggregate([
+//         { $match: { isPublished: true } },
+//         { $group: { _id: '$category', count: { $sum: 1 } } },
+//         { $sort: { count: -1 } },
+//         { $limit: 5 }
+//       ])
+//     ]);
 
-    res.json({
-      success: true,
-      data: {
-        totalEvents,
-        publishedEvents,
-        cancelledEvents,
-        upcomingEvents,
-        popularCategories
-      }
-    });
-  } catch (err) {
-    console.error('Error fetching event stats:', err);
-    res.status(500).json({ 
-      success: false,
-      message: 'Server error while fetching statistics',
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-  }
-});
+//     res.json({
+//       success: true,
+//       data: {
+//         totalEvents,
+//         publishedEvents,
+//         cancelledEvents,
+//         upcomingEvents,
+//         popularCategories
+//       }
+//     });
+//   } catch (err) {
+//     console.error('Event stats error:', err);
+//     res.status(500).json({ 
+//       success: false,
+//       message: 'Failed to fetch event statistics',
+//       error: process.env.NODE_ENV === 'development' ? err.message : undefined
+//     });
+//   }
+// });
 
 module.exports = router;
