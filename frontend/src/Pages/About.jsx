@@ -1,3 +1,4 @@
+// src/pages/About.jsx
 import React from 'react';
 import { FiCalendar, FiUsers, FiCheckCircle, FiStar, FiAward } from 'react-icons/fi';
 

@@ -4,7 +4,6 @@ import {
   Routes,
   Route,
   Navigate,
-  useLocation,
 } from "react-router-dom";
 
 import Login from "./Pages/Login";
@@ -20,23 +19,25 @@ import About from "./Pages/About";
 import ContactUs from "./pages/ContactUs.jsx";
 import MainLayout from "./Components/MainLayout";
 import Profile from "./pages/Profile.jsx";
+import Events from "./pages/Events.jsx";
+import BookEvent from "./Components/BookEvent.jsx";
+import MyTickets from "./pages/MyTickets.jsx";
+import ManageEvents from "./pages/ManageEvents.jsx";
 
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  const token =
+    localStorage.getItem("token") || sessionStorage.getItem("token");
   return token ? children : <Navigate to="/login" replace />;
 };
 
 const PublicRoute = ({ children }) => {
-  const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+  const token =
+    localStorage.getItem("token") || sessionStorage.getItem("token");
   return !token ? children : <Navigate to="/dashboard" replace />;
 };
 
 const PublicLayout = ({ children }) => {
-  return (
-    <div className="min-h-screen bg-gray-100">
-      {children}
-    </div>
-  );
+  return <div className="min-h-screen bg-gray-100">{children}</div>;
 };
 
 function App() {
@@ -85,7 +86,7 @@ function App() {
           }
         />
 
-        {/* Protected Routes with Sidebar */}
+        {/* Protected Routes with MainLayout */}
         <Route
           path="/dashboard"
           element={
@@ -102,16 +103,6 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <Services />
-              </MainLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/events"
-          element={
-            <ProtectedRoute>
-              <MainLayout>
-                <UserDashboard />
               </MainLayout>
             </ProtectedRoute>
           }
@@ -166,13 +157,54 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/profile"
           element={
             <ProtectedRoute>
               <MainLayout>
                 <Profile />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Event Management Routes */}
+        <Route
+          path="/events"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Events />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/book-event/:id"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BookEvent />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-tickets"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <MyTickets />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/manage-events"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ManageEvents />
               </MainLayout>
             </ProtectedRoute>
           }

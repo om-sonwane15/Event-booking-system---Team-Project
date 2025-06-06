@@ -1,4 +1,4 @@
-// Components/MainLayout.jsx
+// src/Components/MainLayout.jsx
 import React from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
