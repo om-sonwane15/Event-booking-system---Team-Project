@@ -16,13 +16,23 @@ dbConnect();
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: [
-    "https://event-booking-system.vercel.app",
-    "http://localhost:5173"
-  ],
-  credentials: true,
-}));
+const allowedOrigins = [
+  "https://event-booking-system-team-project-mly4cv20f.vercel.app", // your Vercel frontend
+  "http://localhost:3000", // for local development
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 app.get("/", (req, res) => {
   res.send("✅ Backend is running successfully on Render!");
