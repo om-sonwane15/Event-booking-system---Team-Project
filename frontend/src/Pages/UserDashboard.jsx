@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FiSearch, FiCalendar, FiLoader } from 'react-icons/fi';
-import Events from '../pages/Events';
+import Events from "../Pages/Events";
 
 const UserDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
