@@ -24,6 +24,9 @@ app.use(cors({
   credentials: true,
 }));
 
+app.get("/", (req, res) => {
+  res.send("✅ Backend is running successfully on Render!");
+});
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
