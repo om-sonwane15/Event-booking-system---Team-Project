@@ -24,6 +24,15 @@ app.use(cors({
   credentials: true,
 }));
 
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Server is healthy 💪",
+    uptime: process.uptime(),
+    timestamp: new Date(),
+  });
+});
+
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 
