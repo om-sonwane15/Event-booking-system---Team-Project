@@ -17,7 +17,7 @@ import AdminDashboard from "./Pages/AdminDashboard";
 import UserDashboard from "./Pages/UserDashboard";
 import Services from "./Pages/Services.jsx";
 import About from "./Pages/About";
-import ContactUs from "./pages/ContactUs.jsx";
+import ContactUs from "./Pages/ContactUs.jsx";
 import MainLayout from "./Components/MainLayout";
 
 const ProtectedRoute = ({ children }) => {
