@@ -65,9 +65,15 @@ const adminRoutes = require('./src/routes/adminRoutes.js');
 app.use('/api/admin', adminRoutes);
 
 // Default Route
-app.get('/', (req, res) => {
-    res.status(200).send('Event Management API is running...');
+router.get("/", async (req, res) => {
+  try {
+    const events = await Event.find();
+    res.status(200).json(events);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
+
 
 // 404 Handler
 app.use((req, res) => {
