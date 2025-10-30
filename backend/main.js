@@ -17,7 +17,7 @@ const app = express();
 
 // Middleware
 const allowedOrigins = [
-  "https://event-booking-system-team-project-mly4cv20f.vercel.app", 
+  "https://event-booking-system-team-project-mly4cv20f.vercel.app/api", 
   "http://localhost:3000", 
 ];
 
