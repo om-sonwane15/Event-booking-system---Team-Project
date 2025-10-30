@@ -17,19 +17,18 @@ const app = express();
 
 // Middleware
 const allowedOrigins = [
-  "https://event-booking-system-team-project-mly4cv20f.vercel.app", // your Vercel frontend
-  "http://localhost:3000", // for local development
+  "https://event-booking-system-team-project-mly4cv20f.vercel.app", 
+  "http://localhost:3000", 
 ];
+
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: [
+      "https://event-booking-system-team-project.vercel.app",
+      "http://localhost:5173" 
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
